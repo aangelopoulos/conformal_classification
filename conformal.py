@@ -16,15 +16,15 @@ class ConformalModel(nn.Module):
         self.alpha = alpha
         self.msk = np.zeros((1, len(calib_loader.dataset.dataset.classes)))
         self.msk[:, kreg:] += lamda
-        self.T=torch.Tensor([0.984])
-        #self.T = platt(self, calib_loader)
+        #self.T=torch.Tensor([0.985])
+        self.T = platt(self, calib_loader)
         self.Qhat = conformal_calibration(self, calib_loader)
 
     def forward(self, *args, randomized=True, **kwargs):
         logits = self.model(*args, **kwargs)
         
         with torch.no_grad():
-            scores = logits.softmax(dim=1).detach().cpu().numpy()
+            scores = (logits/self.T.item()).softmax(dim=1).detach().cpu().numpy()
 
             I, ordered, cumsum = sort_sum(scores)
 
