@@ -16,8 +16,8 @@ class ConformalModel(nn.Module):
         self.alpha = alpha
         self.msk = np.zeros((1, len(calib_loader.dataset.dataset.classes)))
         self.msk[:, kreg:] += lamda
-        #self.T=torch.Tensor([0.985])
-        self.T = platt(self, calib_loader)
+        self.T=torch.Tensor([0.995])
+        #self.T = platt(self, calib_loader)
         self.Qhat = conformal_calibration(self, calib_loader)
 
     def forward(self, *args, randomized=True, **kwargs):
@@ -53,21 +53,41 @@ def conformal_calibration(cmodel, calib_loader):
 
         return Qhat 
 
-def platt(cmodel, calib_loader, num_iters=10, lr=0.01):
+def platt(cmodel, calib_loader, num_iters=1, lr=0.01):
     print("Begin Platt scaling.")
     nll_criterion = nn.CrossEntropyLoss().cuda()
 
-    T = nn.Parameter(torch.Tensor([1]))
+    T = nn.Parameter(torch.Tensor([1]).cuda())
 
     optimizer = optim.SGD([T], lr=lr)
+
+    #with torch.no_grad():
+    #    logits = cmodel.model(torch.cat([x[0].view(1,*x[0].shape) for x in calib_loader.dataset],dim=0))
+    #labels = torch.cat([torch.Tensor([int(x[1])]) for x in calib_loader.dataset], dim=0).long().cuda()
+
+    #optimizer = optim.LBFGS([T], lr=lr, max_iter=num_iters)
+
+    #print(f"Nll before Platt scaling: {nll_criterion(logits/T, labels)}")
+
+    #def eval():
+        #optimizer.zero_grad()
+    #    loss = nll_criterion(logits/T, labels)
+    #    loss.backward(retain_graph=True)
+    #    return loss
+
+    #optimizer.step(eval)
+
+    #print(f"Nll after Platt scaling: {nll_criterion(logits/T, labels)}")
+
+    #optimizer = optim.SGD([T], lr=lr)
 
     with tqdm(total=num_iters*len(calib_loader)) as pbar:
         for iter in range(num_iters):
             for x, targets in calib_loader:
                 optimizer.zero_grad()
                 with torch.no_grad():
-                    out = cmodel.model(x.cuda()).cpu()
-                loss = nll_criterion(out/T, targets)
+                    out = cmodel.model(x.cuda())
+                loss = nll_criterion(out/T, targets.cuda())
                 loss.backward()
                 optimizer.step()
                 pbar.update(1)

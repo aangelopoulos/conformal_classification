@@ -90,7 +90,7 @@ if __name__ == "__main__":
                 ])
 
     # Get the conformal calibration dataset
-    num_calib = 20000 
+    num_calib = 10000 
     imagenet_calib_data, imagenet_val_data = torch.utils.data.random_split(torchvision.datasets.ImageFolder(args.data, transform), [num_calib,50000-num_calib])
 
     # Initialize loaders 
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     criterion = torch.nn.CrossEntropyLoss().cuda()
     cudnn.benchmark = True
 
-    model = torch.nn.DataParallel(torchvision.models.resnet152(pretrained=True,progress=True)).cuda() 
+    model = torch.nn.DataParallel(torchvision.models.resnet18(pretrained=True,progress=True)).cuda() 
     # Conformalize model
     model = ConformalModel(model, calib_loader, alpha=0.1, kreg=4, lamda=100)
 
