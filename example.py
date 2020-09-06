@@ -90,7 +90,7 @@ if __name__ == "__main__":
                 ])
 
     # Get the conformal calibration dataset
-    num_calib = 500
+    num_calib = 20000 
     imagenet_calib_data, imagenet_val_data = torch.utils.data.random_split(torchvision.datasets.ImageFolder(args.data, transform), [num_calib,50000-num_calib])
 
     # Initialize loaders 
