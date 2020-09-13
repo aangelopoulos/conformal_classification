@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.special import softmax
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -10,21 +11,25 @@ import pdb
 # Save it to a file in .cache/modelname
 # The only difference is that the forward method of ConformalModel also outputs a set.
 class ConformalModel(nn.Module):
-    def __init__(self, model, calib_loader, alpha, kreg, lamda):
+    def __init__(self, model, calib_loader, alpha, kreg, lamda, randomized=True):
         super(ConformalModel, self).__init__()
         self.model = model 
         self.alpha = alpha
         self.msk = np.zeros((1, len(calib_loader.dataset.dataset.classes)))
         self.msk[:, kreg:] += lamda
-        self.T=torch.Tensor([0.995])
+        self.T=torch.Tensor([1])
+        self.randomized=randomized
         #self.T = platt(self, calib_loader)
         self.Qhat = conformal_calibration(self, calib_loader)
 
-    def forward(self, *args, randomized=True, **kwargs):
+    def forward(self, *args, randomized=None, **kwargs):
+        if randomized == None:
+            randomized = self.randomized
         logits = self.model(*args, **kwargs)
         
         with torch.no_grad():
-            scores = (logits/self.T.item()).softmax(dim=1).detach().cpu().numpy()
+            logits_numpy = logits.detach().cpu().numpy()
+            scores = softmax(logits_numpy/self.T.item(), axis=1)
 
             I, ordered, cumsum = sort_sum(scores)
 
@@ -40,14 +45,16 @@ def conformal_calibration(cmodel, calib_loader):
     with torch.no_grad():
         E = np.array([])
         for x, targets in tqdm(calib_loader):
-            scores = (cmodel.model(x)/cmodel.T.item()).softmax(dim=1).detach().cpu().numpy()
+            logits = cmodel.model(x.cuda()).detach().cpu().numpy()
+            scores = softmax(logits/cmodel.T.item(), axis=1)
+            #scores = (cmodel.model(x.cuda())/cmodel.T.item()).softmax(dim=1).detach().cpu().numpy()
 
             I, ordered, cumsum = sort_sum(scores)
 
             ordered = ordered + cmodel.msk
             cumsum = cumsum + np.cumsum(cmodel.msk, axis=1)
 
-            E = np.concatenate((E,giq(scores,targets,I=I,ordered=ordered,cumsum=cumsum)))
+            E = np.concatenate((E,giq(scores,targets,I=I,ordered=ordered,cumsum=cumsum,randomized=cmodel.randomized)))
             
         Qhat = np.quantile(E,1-cmodel.alpha,interpolation='higher')
 
@@ -95,6 +102,15 @@ def platt(cmodel, calib_loader, num_iters=1, lr=0.01):
     print(f"Optimal T={T.item()}")
     return T 
 
+
+"""
+
+
+        INTERNAL FUNCTIONS
+
+
+"""
+
 def gcq(scores, tau, I, ordered, cumsum, randomized=True):
     sizes_base = (cumsum <= tau).sum(axis=1) + 1  # 1 - 1001
     sizes_base = np.minimum(sizes_base, 1000) # 1-1000
@@ -120,16 +136,21 @@ def gcq(scores, tau, I, ordered, cumsum, randomized=True):
 
     return S
 
-def get_tau(score, target, I, ordered, cumsum): # For one example
+def get_tau(score, target, I, ordered, cumsum, randomized=True): # For one example
     idx = np.where(I==target)
     tau_nonrandom = cumsum[idx]
 
-    if idx == (0,0):
-        return np.random.random() * tau_nonrandom 
-    else:
-        return np.random.random() * ordered[idx] + cumsum[(idx[0],idx[1]-1)]
+    if not randomized:
+        return tau_nonrandom
+    
+    U = np.random.random()
 
-def giq(scores,targets,I,ordered,cumsum):
+    if idx == (0,0):
+        return U * tau_nonrandom 
+    else:
+        return U * ordered[idx] + cumsum[(idx[0],idx[1]-1)]
+
+def giq(scores,targets,I,ordered,cumsum,randomized=True):
     """
         Generalized inverse quantile conformity score function.
         E from equation (7) in RSC. 
@@ -137,7 +158,7 @@ def giq(scores,targets,I,ordered,cumsum):
     """
     E = -np.ones((scores.shape[0],))
     for i in range(scores.shape[0]):
-        E[i] = get_tau(scores[i:i+1,:],targets[i].item(),I[i:i+1,:],ordered[i:i+1,:],cumsum[i:i+1,:])
+        E[i] = get_tau(scores[i:i+1,:],targets[i].item(),I[i:i+1,:],ordered[i:i+1,:],cumsum[i:i+1,:], randomized=randomized)
 
     return E
 

@@ -1,7 +1,14 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torchvision
+import torchvision.transforms as transforms
 import time
+import pathlib
+import os
+import pickle
+from tqdm import tqdm
+import pdb
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
@@ -27,7 +34,7 @@ class AverageMeter(object):
         fmtstr = '{name} {val' + self.fmt + '} ({avg' + self.fmt + '})'
         return fmtstr.format(**self.__dict__)
 
-def validate(val_loader, model, criterion):
+def validate(val_loader, model, criterion, print_bool):
     with torch.no_grad():
         batch_time = AverageMeter('batch_time')
         losses = AverageMeter('losses')
@@ -38,6 +45,7 @@ def validate(val_loader, model, criterion):
         # switch to evaluate mode
         model.eval()
         end = time.time()
+        N = 0
         for i, (x, target) in enumerate(val_loader):
             target = target.cuda()
             # compute output
@@ -57,11 +65,13 @@ def validate(val_loader, model, criterion):
             # measure elapsed time
             batch_time.update(time.time() - end)
             end = time.time()
-            if i % 1 == 0:
-                print(f'\rN: {i*x.shape[0]} | Time: {batch_time.val:.3f} ({batch_time.avg:.3f}) | Loss: {losses.val:.4f} ({losses.avg:.4f}) | Cvg@1: {top1.val:.3f} ({top1.avg:.3f}) | Cvg@5: {top5.val:.3f} ({top5.avg:.3f}) | Cvg@RAPS: {coverage.val:.3f} ({coverage.avg:.3f}) | Size@RAPS: {size.val:.3f} ({size.avg:.3f})', end='')
-    print('') #Endline
+            N = N + x.shape[0]
+            if print_bool:
+                print(f'\rN: {N} | Time: {batch_time.val:.3f} ({batch_time.avg:.3f}) | Loss: {losses.val:.4f} ({losses.avg:.4f}) | Cvg@1: {top1.val:.3f} ({top1.avg:.3f}) | Cvg@5: {top5.val:.3f} ({top5.avg:.3f}) | Cvg@RAPS: {coverage.val:.3f} ({coverage.avg:.3f}) | Size@RAPS: {size.val:.3f} ({size.avg:.3f})', end='')
+    if print_bool:
+        print('') #Endline
 
-    return top1.avg
+    return top1.avg, top5.avg, coverage.avg, size.avg 
 
 def coverage_size(S,targets):
     covered = 0
@@ -86,3 +96,98 @@ def accuracy(output, target, topk=(1,)):
         correct_k = correct[:k].view(-1).float().sum(0)
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
+
+def data2tensor(data):
+    imgs = torch.cat([x[0].unsqueeze(0) for x in data], dim=0).cuda()
+    targets = torch.cat([torch.Tensor([int(x[1])]) for x in data], dim=0).long()
+    return imgs, targets
+
+def split2ImageFolder(path, transform, n1, n2):
+    dataset = torchvision.datasets.ImageFolder(path, transform)
+    data1, data2 = torch.utils.data.random_split(dataset, [n1, len(dataset)-n1])
+    data2, _ = torch.utils.data.random_split(data2, [n2, len(dataset)-n1-n2])
+    return data1, data2
+
+def split2(dataset, n1, n2):
+    data1, temp = torch.utils.data.random_split(dataset, [n1, dataset.tensors[0].shape[0]-n1])
+    data2, _ = torch.utils.data.random_split(temp, [n2, dataset.tensors[0].shape[0]-n1-n2])
+    return data1, data2
+
+def get_model(modelname):
+    if modelname == 'ResNet18':
+        model = torchvision.models.resnet18(pretrained=True, progress=True)
+
+    elif modelname == 'ResNet50':
+        model = torchvision.models.resnet50(pretrained=True, progress=True)
+
+    elif modelname == 'ResNet101':
+        model = torchvision.models.resnet101(pretrained=True, progress=True)
+
+    elif modelname == 'ResNet152':
+        model = torchvision.models.resnet152(pretrained=True, progress=True)
+
+    elif modelname == 'ResNeXt101':
+        model = torchvision.models.resnext101_32x8d(pretrained=True, progress=True)
+
+    elif modelname == 'VGG16':
+        model = torchvision.models.vgg16(pretrained=True, progress=True)
+
+    elif modelname == 'ShuffleNet':
+        model = torchvision.models.shufflenet_v2_x1_0(pretrained=True, progress=True)
+
+    elif modelname == 'Inception':
+        model = torchvision.models.inception_v3(pretrained=True, progress=True)
+
+    elif modelname == 'DenseNet161':
+        model = torchvision.models.densenet161(pretrained=True, progress=True)
+
+    else:
+        raise NotImplementedError
+
+    model.eval()
+    model = torch.nn.DataParallel(model).cuda()
+
+    return model
+
+def get_logits_dataset(modelname, datasetname, datasetpath, cache=str(pathlib.Path(__file__).parent.absolute()) + '/experiments/.cache/'):
+    fname = cache + datasetname + '/' + modelname + '.pkl' 
+
+    # If the file exists, load and return it.
+    if os.path.exists(fname):
+        with open(fname, 'rb') as handle:
+            return pickle.load(handle)
+
+    # Else we will load our model, run it on the dataset, and save/return the output.
+    model = get_model(modelname)
+
+    transform = transforms.Compose([
+                    transforms.Resize(256),
+                    transforms.CenterCrop(224),
+                    transforms.ToTensor(),
+                    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                         std =[0.229, 0.224, 0.225])
+                    ])
+    
+    dataset = torchvision.datasets.ImageFolder(datasetpath, transform)
+    loader = torch.utils.data.DataLoader(dataset, batch_size = 32, shuffle=False, pin_memory=True)
+
+    logits = torch.zeros((len(dataset), len(dataset.classes)))
+    labels = torch.zeros((len(dataset),))
+    i = 0
+    print(f'Computing logits for ' + modelname + ' (only happens once).')
+    with torch.no_grad():
+        for x, targets in tqdm(loader):
+            batch_logits = model(x.cuda()).detach().cpu()
+            logits[i:(i+x.shape[0]), :] = batch_logits
+            labels[i:(i+x.shape[0])] = targets.cpu()
+            i = i + x.shape[0]
+    
+    # Construct the dataset
+    dataset_logits = torch.utils.data.TensorDataset(logits, labels.long()) 
+
+    # Save the dataset 
+    os.makedirs(os.path.dirname(fname), exist_ok=True)
+    with open(fname, 'wb') as handle:
+        pickle.dump(dataset_logits, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    return dataset_logits
