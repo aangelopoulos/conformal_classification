@@ -4,8 +4,8 @@ from conformal import *
 from efficient_conformal import *
 from utils import *
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.special import softmax
-from scipy.stats import median_absolute_deviation as mad
 import torch
 import torchvision
 import torchvision.transforms as tf
@@ -14,6 +14,43 @@ import torch.backends.cudnn as cudnn
 import itertools
 from tqdm import tqdm
 import pandas as pd
+from table1 import trial, experiment
+import seaborn as sns
+
+def plot_figure2(df):
+    # Make axes
+    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(12,3))
+
+    df['desired coverage (1-α)'] = 1-df['alpha']
+
+    # Left barplot -- gray lines to indicate desired coverage level
+    sns.barplot('desired coverage (1-α)','desired coverage (1-α)',data=df, alpha=0.3, ax=axs[0], edgecolor='k', ci=None, fill=False)
+    # Left barplot -- empirical coverages
+    bplot = sns.barplot(x='desired coverage (1-α)', y='coverage', hue='predictor', data=df, ax=axs[0], alpha=0.5, ci='sd', linewidth=0.01)
+    # Change alpha on face colors
+    for patch in bplot.artists:
+        r, g, b, a = patch.get_facecolor()
+        patch.set_facecolor((r,g,b,0.5))
+    # Right barplot - empirical sizes
+    sns.barplot(x='desired coverage (1-α)', y='size', hue='predictor', data=df, ax=axs[1], ci='sd', alpha=0.5, linewidth=0.01)
+    sns.despine(top=True, right=True)
+
+    axs[0].set_ylim(ymin=0.85,ymax=1.0)
+    axs[0].set_yticks([0.85, 0.9, 0.95, 1])
+    axs[0].set_ylabel('empirical coverage')
+
+    axs[1].set_ylabel('average size')
+
+    # Font size 
+    for ax in axs:
+        for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
+                ax.get_xticklabels() + ax.get_yticklabels()):
+            item.set_fontsize(15)
+        ax.legend(fontsize=15,title_fontsize=15)
+    axs[1].get_legend().remove()
+
+    plt.tight_layout(rect=[0, 0.03, 1, 0.93])
+    plt.savefig('./barplot-figure2.pdf')
 
 def trial(model, logits, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, criterion, naive_bool):
     logits_cal, logits_val = split2(logits, n_data_conf, n_data_val) # A new random split for every trial
@@ -39,19 +76,17 @@ def experiment(modelname, datasetname, datasetpath, num_trials, alpha, kreg, lam
     model = get_model(modelname)
 
     ### Perform experiment
-    top1s = np.zeros((num_trials,))
-    top5s = np.zeros((num_trials,))
-    coverages = np.zeros((num_trials,))
-    sizes = np.zeros((num_trials,))
+    df = pd.DataFrame(columns = ["model","predictor","alpha","coverage","size"])
     for i in tqdm(range(num_trials)):
         top1_avg, top5_avg, cvg_avg, sz_avg = trial(model, logits, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, criterion, naive_bool)
-        top1s[i] = top1_avg
-        top5s[i] = top5_avg
-        coverages[i] = cvg_avg
-        sizes[i] = sz_avg
-        print(f'\n\tTop1: {np.median(top1s[0:i+1]):.3f}, Top5: {np.median(top5s[0:i+1]):.3f}, Coverage: {np.median(coverages[0:i+1]):.3f}, Size: {np.median(sizes[0:i+1]):.3f}\033[F', end='')
+        df = df.append({"model": modelname,
+                        "predictor": predictor,
+                        "alpha": alpha,
+                        "coverage": cvg_avg,
+                        "size": sz_avg}, ignore_index=True) 
+            
     print('')
-    return np.median(top1s), np.median(top5s), np.median(coverages), np.median(sizes), mad(top1s), mad(top5s), mad(coverages), mad(sizes)
+    return df 
 
 if __name__ == "__main__":
     ### Fix randomness 
@@ -62,14 +97,14 @@ if __name__ == "__main__":
     random.seed(seed)
 
     ### Configure experiment
-    modelnames = ['ResNet152','ResNeXt101','ResNet101','ResNet50','ResNet18','DenseNet161','VGG16','Inception','ShuffleNet']
-    alphas = [0.05, 0.10]
+    modelnames = ['ResNet152']
+    alphas = [0.01, 0.05, 0.10]
     predictors = ['Naive', 'APS', 'RAPS']
     params = list(itertools.product(modelnames, alphas, predictors))
     m = len(params)
     datasetname = 'Imagenet'
     datasetpath = '/scratch/group/ilsvrc/val/'
-    num_trials = 100 
+    num_trials = 4 
     kreg = 4
     lamda = 100 
     randomized = True
@@ -80,22 +115,11 @@ if __name__ == "__main__":
     cudnn.benchmark = True
 
     ### Perform the experiment
-    df = pd.DataFrame(columns = ["Model","Predictor","Top1","Top5","alpha","Coverage","Size"])
+    df = pd.DataFrame(columns = ["model","predictor","alpha","coverage","size"])
     for i in range(m):
         modelname, alpha, predictor = params[i]
         print(f'Model: {modelname} | Desired coverage: {1-alpha} | Predictor: {predictor}')
         out = experiment(modelname, datasetname, datasetpath, num_trials, params[i][1], kreg, lamda, randomized, n_data_conf, n_data_val, bsz, criterion, predictor) 
-        df = df.append({"Model": modelname,
-                        "Predictor": predictor,
-                        "Top1": np.round(out[0],3),
-                        "Top5": np.round(out[1],3),
-                        "alpha": alpha,
-                        "Coverage": np.round(out[2],3),
-                        "Size": 
-                        np.round(out[3],3)}, ignore_index=True) 
-
-    ### Print the TeX table
-    print(df.to_latex())
-    table = open("exp_table1.tex", 'w')
-    table.write(df.to_latex())
-    table.close()
+        df = df.append(out, ignore_index=True) 
+    plot_figure2(df) 
+    
