@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -9,6 +10,12 @@ import os
 import pickle
 from tqdm import tqdm
 import pdb
+
+def sort_sum(scores):
+    I = scores.argsort(axis=1)[:,::-1]
+    ordered = np.sort(scores,axis=1)[:,::-1]
+    cumsum = np.cumsum(ordered,axis=1) 
+    return I, ordered, cumsum
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
@@ -57,8 +64,8 @@ def validate(val_loader, model, criterion, print_bool):
 
             # Update meters
             losses.update(loss.item(), n=x.shape[0])
-            top1.update(prec1.item(), n=x.shape[0])
-            top5.update(prec5.item(), n=x.shape[0])
+            top1.update(prec1.item()/100.0, n=x.shape[0])
+            top5.update(prec5.item()/100.0, n=x.shape[0])
             coverage.update(cvg, n=x.shape[0])
             size.update(sz, n=x.shape[0])
 
@@ -149,6 +156,23 @@ def get_model(modelname):
 
     return model
 
+# Computes logits and targets from a model and loader
+def get_logits_targets(model, loader):
+    logits = torch.zeros((len(loader.dataset), len(loader.dataset.dataset.classes)))
+    labels = torch.zeros((len(loader.dataset),))
+    i = 0
+    print(f'Computing logits for model (only happens once).')
+    with torch.no_grad():
+        for x, targets in tqdm(loader):
+            batch_logits = model(x.cuda()).detach().cpu()
+            logits[i:(i+x.shape[0]), :] = batch_logits
+            labels[i:(i+x.shape[0])] = targets.cpu()
+            i = i + x.shape[0]
+    
+    # Construct the dataset
+    dataset_logits = torch.utils.data.TensorDataset(logits, labels.long()) 
+    return dataset_logits
+
 def get_logits_dataset(modelname, datasetname, datasetpath, cache=str(pathlib.Path(__file__).parent.absolute()) + '/experiments/.cache/'):
     fname = cache + datasetname + '/' + modelname + '.pkl' 
 
@@ -171,19 +195,8 @@ def get_logits_dataset(modelname, datasetname, datasetpath, cache=str(pathlib.Pa
     dataset = torchvision.datasets.ImageFolder(datasetpath, transform)
     loader = torch.utils.data.DataLoader(dataset, batch_size = 32, shuffle=False, pin_memory=True)
 
-    logits = torch.zeros((len(dataset), len(dataset.classes)))
-    labels = torch.zeros((len(dataset),))
-    i = 0
-    print(f'Computing logits for ' + modelname + ' (only happens once).')
-    with torch.no_grad():
-        for x, targets in tqdm(loader):
-            batch_logits = model(x.cuda()).detach().cpu()
-            logits[i:(i+x.shape[0]), :] = batch_logits
-            labels[i:(i+x.shape[0])] = targets.cpu()
-            i = i + x.shape[0]
-    
-    # Construct the dataset
-    dataset_logits = torch.utils.data.TensorDataset(logits, labels.long()) 
+    # Get the logits and targets
+    dataset_logits = get_logits_targets(model, loader)
 
     # Save the dataset 
     os.makedirs(os.path.dirname(fname), exist_ok=True)

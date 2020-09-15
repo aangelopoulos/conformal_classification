@@ -1,7 +1,6 @@
 import os, sys, inspect
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 from conformal import * 
-from logits_conformal import *
 from utils import *
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,6 +16,7 @@ import pandas as pd
 from table1 import trial, experiment
 import seaborn as sns
 
+# Plotting code
 def plot_figure2(df):
     # Make axes
     fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(12,3))
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     m = len(params)
     datasetname = 'Imagenet'
     datasetpath = '/scratch/group/ilsvrc/val/'
-    num_trials = 4 
+    num_trials = 100 
     kreg = 4
     lamda = 100 
     randomized = True
