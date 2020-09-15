@@ -41,7 +41,6 @@ class ConformalModelLogits(nn.Module):
 
 
 def conformal_calibration_logits(cmodel, calib_loader):
-    #print("Conformal calibration")
     with torch.no_grad():
         E = np.array([])
         for x, targets in calib_loader:
