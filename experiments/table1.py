@@ -96,6 +96,6 @@ if __name__ == "__main__":
 
     ### Print the TeX table
     print(df.to_latex())
-    table = open("exp_table1.tex", 'w')
+    table = open("./outputs/exp_table1.tex", 'w')
     table.write(df.to_latex())
     table.close()

@@ -50,7 +50,7 @@ def plot_figure2(df):
     axs[1].get_legend().remove()
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.93])
-    plt.savefig('./barplot-figure2.pdf')
+    plt.savefig('./outputs/barplot-figure2.pdf')
 
 def trial(model, logits, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, criterion, naive_bool):
     logits_cal, logits_val = split2(logits, n_data_conf, n_data_val) # A new random split for every trial

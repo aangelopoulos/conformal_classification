@@ -68,7 +68,7 @@ def plot_figure4(df_big):
         fig.suptitle(f'λ = {lamda}')
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.93])
-        plt.savefig(f'histograms_figure4_{lamda}.pdf')
+        plt.savefig(f'./outputs/histograms_figure4_{lamda}.pdf')
 
 # Returns a dataframe with:
 # 1) Set sizes for all test-time examples.
