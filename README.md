@@ -7,7 +7,7 @@
     <a href="https://opensource.org/licenses/MIT" alt="License"> <img src="https://img.shields.io/badge/license-MIT-blue.svg" /> </a>
 </p>
 
-## Citation
+## Paper 
 [Uncertainty Sets for Image Classifiers using Conformal Prediction](https://arxiv.org/abs/)
 ```
 @article{angelopoulos2020event,
