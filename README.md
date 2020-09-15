@@ -25,7 +25,7 @@
     The procedure is as simple and fast as Platt scaling, but provides a formal guarantee for every model and dataset.
 </p>
 
-<p align="center"><img width=95% src="https://github.com/aangelopoulos/conformal-classification/blob/master/media/figure_sets.pdf"></p>
+<p align="center"><img width=95% src="https://github.com/aangelopoulos/conformal-classification/blob/master/media/figure_sets.svg"></p>
 
 <br>
 
