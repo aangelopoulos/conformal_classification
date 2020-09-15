@@ -1,7 +1,7 @@
 import os, sys, inspect
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 from conformal import * 
-from efficient_conformal import *
+from logits_conformal import *
 from utils import *
 import numpy as np
 import matplotlib.pyplot as plt
