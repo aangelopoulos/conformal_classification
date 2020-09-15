@@ -40,8 +40,8 @@ if __name__ == "__main__":
 
     # Standard boilerplate
     model = torchvision.models.resnet152(pretrained=True,progress=True).cuda()
+    model = torch.nn.DataParallel(model) 
     model.eval()
-    #model = torch.nn.DataParallel(model) 
     # Conformalize model
     model = ConformalModel(model, calib_loader, alpha=0.1, kreg=4, lamda=100)
 
