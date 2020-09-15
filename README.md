@@ -25,7 +25,12 @@
     The procedure is as simple and fast as Platt scaling, but provides a formal guarantee for every model and dataset.
 </p>
 
-<p align="center"><img width=95% src="https://github.com/aangelopoulos/conformal-classification/blob/master/media/figure_sets.svg"></p>
+<figure>
+<img src="https://github.com/aangelopoulos/conformal-classification/blob/master/media/figure_sets.svg" alt="Set-valued classifier." style="display: block; width=80%">
+<figcaption>
+    The figure caption.
+</figcaption>
+</figure>
 
 <br>
 
