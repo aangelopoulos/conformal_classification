@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 import time
 from tqdm import tqdm
+from utils import get_logits_targets, sort_sum
 import pdb
 
 # Conformalize a model with a calibration set.
@@ -17,10 +18,10 @@ class ConformalModel(nn.Module):
         self.alpha = alpha
         self.msk = np.zeros((1, len(calib_loader.dataset.dataset.classes)))
         self.msk[:, kreg:] += lamda
-        #self.T=torch.Tensor([1])
         self.randomized=randomized
-        self.T = platt(self, calib_loader)
-        self.Qhat = conformal_calibration(self, calib_loader)
+        self.T = torch.Tensor([1]) #initialize
+        self.T, logits_loader = platt(self, calib_loader)
+        self.Qhat = conformal_calibration_logits(self, logits_loader)
 
     def forward(self, *args, randomized=None, **kwargs):
         if randomized == None:
@@ -60,28 +61,16 @@ def conformal_calibration(cmodel, calib_loader):
 
         return Qhat 
 
-def platt(cmodel, calib_loader, num_iters=1, lr=0.01):
+def platt(cmodel, calib_loader, max_iters=10, lr=0.01, epsilon=0.01):
     print("Begin Platt scaling.")
-    nll_criterion = nn.CrossEntropyLoss().cuda()
+    # Save logits so don't need to double compute them
+    logits_dataset = get_logits_targets(cmodel.model, calib_loader)
+    logits_loader = torch.utils.data.DataLoader(logits_dataset, batch_size = calib_loader.batch_size, shuffle=False, pin_memory=True)
 
-    T = nn.Parameter(torch.Tensor([1]).cuda())
-
-    optimizer = optim.SGD([T], lr=lr)
-
-    with tqdm(total=num_iters*len(calib_loader)) as pbar:
-        for iter in range(num_iters):
-            for x, targets in calib_loader:
-                optimizer.zero_grad()
-                with torch.no_grad():
-                    out = cmodel.model(x.cuda())
-                loss = nll_criterion(out/T, targets.cuda())
-                loss.backward()
-                optimizer.step()
-                pbar.update(1)
+    T = platt_logits(cmodel, logits_loader, max_iters=max_iters, lr=lr, epsilon=epsilon)
 
     print(f"Optimal T={T.item()}")
-    return T 
-
+    return T, logits_loader 
 
 """
 
@@ -90,6 +79,81 @@ def platt(cmodel, calib_loader, num_iters=1, lr=0.01):
 
 
 """
+
+### Precomputed-logit versions of the above functions.
+
+class ConformalModelLogits(nn.Module):
+    def __init__(self, model, calib_loader, alpha, kreg, lamda, randomized=True, naive=False):
+        super(ConformalModelLogits, self).__init__()
+        self.model = model 
+        self.alpha = alpha
+        self.msk = np.zeros((1, calib_loader.dataset[0][0].shape[0]))
+        self.msk[:, kreg:] += lamda
+        self.randomized=randomized
+        self.T = platt_logits(self, calib_loader)
+        self.Qhat = 1-alpha if naive else conformal_calibration_logits(self, calib_loader)
+
+    def forward(self, logits, randomized=None):
+        if randomized == None:
+            randomized = self.randomized
+        
+        with torch.no_grad():
+            logits_numpy = logits.detach().cpu().numpy()
+            scores = softmax(logits_numpy/self.T.item(), axis=1)
+
+            I, ordered, cumsum = sort_sum(scores)
+
+            ordered = ordered + self.msk
+            cumsum = cumsum + np.cumsum(self.msk, axis=1)
+
+            S = gcq(scores, self.Qhat, I=I, ordered=ordered, cumsum=cumsum, randomized=randomized)
+
+        return logits, S
+
+def conformal_calibration_logits(cmodel, calib_loader):
+    with torch.no_grad():
+        E = np.array([])
+        for logits, targets in calib_loader:
+            logits = logits.detach().cpu().numpy()
+
+            scores = softmax(logits/cmodel.T.item(), axis=1)
+
+            I, ordered, cumsum = sort_sum(scores)
+
+            ordered = ordered + cmodel.msk
+            cumsum = cumsum + np.cumsum(cmodel.msk, axis=1)
+
+            E = np.concatenate((E,giq(scores,targets,I=I,ordered=ordered,cumsum=cumsum,randomized=cmodel.randomized)))
+            
+        Qhat = np.quantile(E,1-cmodel.alpha,interpolation='higher')
+
+        return Qhat 
+
+def platt_logits(cmodel, calib_loader, max_iters=10, lr=0.01, epsilon=0.01):
+    #print("Begin Platt scaling.")
+    nll_criterion = nn.CrossEntropyLoss().cuda()
+
+    T = nn.Parameter(torch.Tensor([1.3]).cuda())
+
+    optimizer = optim.SGD([T], lr=lr)
+    #init_nll = nll_criterion(calib_loader.dataset.dataset.tensors[0].cuda()/T,calib_loader.dataset.dataset.tensors[1].long().cuda())
+    for iter in range(max_iters):
+        T_old = T.item()
+        for x, targets in calib_loader:
+            optimizer.zero_grad()
+            x = x.cuda()
+            x.requires_grad = True
+            out = x/T
+            loss = nll_criterion(out, targets.long().cuda())
+            loss.backward()
+            optimizer.step()
+        if abs(T_old - T.item()) < epsilon:
+            break
+    #final_nll = nll_criterion(calib_loader.dataset.dataset.tensors[0].cuda()/T,calib_loader.dataset.dataset.tensors[1].long().cuda())
+    #print(f"Optimal T={T.item()}")
+    return T 
+
+### CORE CONFORMAL INFERENCE FUNCTIONS
 
 def gcq(scores, tau, I, ordered, cumsum, randomized=True):
     sizes_base = (cumsum <= tau).sum(axis=1) + 1  # 1 - 1001
@@ -141,10 +205,4 @@ def giq(scores,targets,I,ordered,cumsum,randomized=True):
         E[i] = get_tau(scores[i:i+1,:],targets[i].item(),I[i:i+1,:],ordered[i:i+1,:],cumsum[i:i+1,:], randomized=randomized)
 
     return E
-
-def sort_sum(scores):
-    I = scores.argsort(axis=1)[:,::-1]
-    ordered = np.sort(scores,axis=1)[:,::-1]
-    cumsum = np.cumsum(ordered,axis=1) 
-    return I, ordered, cumsum
 

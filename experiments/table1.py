@@ -1,7 +1,6 @@
 import os, sys, inspect
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 from conformal import * 
-from logits_conformal import *
 from utils import *
 import numpy as np
 from scipy.special import softmax
@@ -62,7 +61,9 @@ if __name__ == "__main__":
     random.seed(seed)
 
     ### Configure experiment
-    modelnames = ['ResNet152','ResNeXt101','ResNet101','ResNet50','ResNet18','DenseNet161','VGG16','Inception','ShuffleNet']
+    # InceptionV3 can take a long time to load, depending on your version of scipy (see https://github.com/pytorch/vision/issues/1797). 
+    # Therefore I have not included it below, but if you'd like to use it, just add 'Inception' to the list.
+    modelnames = ['ResNet152','ResNeXt101','ResNet101','ResNet50','ResNet18','DenseNet161','VGG16','ShuffleNet']
     alphas = [0.05, 0.10]
     predictors = ['Naive', 'APS', 'RAPS']
     params = list(itertools.product(modelnames, alphas, predictors))
@@ -84,6 +85,7 @@ if __name__ == "__main__":
     for i in range(m):
         modelname, alpha, predictor = params[i]
         print(f'Model: {modelname} | Desired coverage: {1-alpha} | Predictor: {predictor}')
+
         out = experiment(modelname, datasetname, datasetpath, num_trials, params[i][1], kreg, lamda, randomized, n_data_conf, n_data_val, bsz, criterion, predictor) 
         df = df.append({"Model": modelname,
                         "Predictor": predictor,

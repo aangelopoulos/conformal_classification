@@ -1,7 +1,6 @@
 import os, sys, inspect
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 from conformal import * 
-from logits_conformal import *
 from utils import *
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,7 +15,7 @@ from tqdm import tqdm
 import pandas as pd
 import seaborn as sns
 
-# Plotting code.
+# Plotting code
 def plot_figure4(df_big):
     for lamda in df_big.lamda.unique():
         df = df_big[df_big.lamda == lamda]
