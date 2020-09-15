@@ -11,9 +11,9 @@
 [Uncertainty Sets for Image Classifiers using Conformal Prediction](https://arxiv.org/abs/)
 ```
 @article{angelopoulos2020event,
-  title={Event Based, Near Eye Gaze Tracking Beyond 10,000 Hz},
-  author={Angelopoulos, Anastasios N and Martel, Julien NP and Kohli, Amit PS and Conradt, Jorg and Wetzstein, Gordon},
-  journal={arXiv preprint arXiv:2004.03577},
+  title={Uncertainty Sets for Image Classifiers using Conformal Prediction},
+  author={Angelopoulos, Anastasios N and Bates, Stephen and Malik, Jitendra and Jordan, Michael I},
+  journal={arXiv preprint arXiv:},
   year={2020}
 }
 ```
