@@ -13,7 +13,6 @@ import torch.backends.cudnn as cudnn
 import itertools
 from tqdm import tqdm
 import pandas as pd
-from table1 import trial, experiment
 import seaborn as sns
 
 # Plotting code
