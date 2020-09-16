@@ -69,7 +69,7 @@ Complete!
 ```
 The values in parentheses are running averages. The preceding values are only for the most recent batch. The timing values will be different on your system, but the rest of the numbers should be exactly the same. 
 
-The expected outputs of the experiments are stored in `experiments/outputs`, and they are exactly identical to the results reported in our paper. 
+The expected outputs of the experiments are stored in `experiments/outputs`, and they are exactly identical to the results reported in our paper. You can reproduce the results by executing `python table1.py`, `python figure2.py`, and `python figure4.py` after you have installed our dependencies.
 
 ## Picking `alpha`, `kreg`, and `lamda`
 
