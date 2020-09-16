@@ -1,5 +1,5 @@
 <p align="center"><img width=25% src="https://github.com/aangelopoulos/conformal-classification/blob/master/media/logo_conformal_compat.svg"></p>
-<p align="center"><img width=40% src="https://github.com/aangelopoulos/conformal-classification/blob/master/media/text_conformal.svg"></p>
+<p align="center"><img width=50% src="https://github.com/aangelopoulos/conformal-classification/blob/master/media/text_conformal.svg"></p>
 
 <p align="center">
     <a href="" alt="Python"> <img src="https://img.shields.io/badge/python-v3.6+-blue.svg" /> </a>
