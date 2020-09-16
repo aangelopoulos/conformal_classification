@@ -9,7 +9,6 @@ from utils import *
 from conformal import ConformalModel
 import torch.backends.cudnn as cudnn
 import random
-import pdb
 
 parser = argparse.ArgumentParser(description='Conformalize Torchvision Model on Imagenet')
 parser.add_argument('data', metavar='IMAGENETVALDIR', help='path to Imagenet Val')
