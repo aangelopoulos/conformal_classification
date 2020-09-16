@@ -67,7 +67,7 @@ Model calibrated and conformalized! Now evaluate over remaining data.
 N: 48000 | Time: 2.318 (2.401) | Loss: 0.7886 (0.8778) | Cvg@1: 0.773 (0.783) | Cvg@5: 0.945 (0.940) | Cvg@RAPS: 0.914 (0.902) | Size@RAPS: 4.242 (4.012)
 Complete!
 ```
-The values in parentheses are running averages. The preceding values are only for the most recent batch.
+The values in parentheses are running averages. The preceding values are only for the most recent batch. The timing values will be different on your system, but the rest of the numbers should be exactly the same. 
 
 The expected outputs of the experiments are stored in `experiments/outputs`, and they are exactly identical to the results reported in our paper. 
 
