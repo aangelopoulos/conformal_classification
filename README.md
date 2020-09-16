@@ -41,7 +41,7 @@ From the root directory, install the dependencies and run our example by executi
 git clone https://github.com/aangelopoulos/conformal-classification
 cd conformal-classification
 conda env create -f environment.yml
-source activate conformal
+conda activate conformal
 python example.py
 ```
 If you'd like to use our codebase on your own model, first place this at the top of your file:
