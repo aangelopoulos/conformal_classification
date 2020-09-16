@@ -1,6 +1,3 @@
-<!--
-<p align="center"><img width=25% src="https://people.eecs.berkeley.edu/~angelopoulos/media_public/logo_conformal.svg"></p>
--->
 <p align="center"><img width=25% src="https://github.com/aangelopoulos/conformal-classification/blob/master/media/logo_conformal.svg"></p>
 <p align="center"><img width=60% src="https://github.com/aangelopoulos/conformal-classification/blob/master/media/text_conformal.svg"></p>
 
