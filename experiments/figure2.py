@@ -62,17 +62,11 @@ def trial(model, logits, alpha, kreg, lamda, randomized, n_data_conf, n_data_val
     top1_avg, top5_avg, cvg_avg, sz_avg = validate(loader_val, conformal_model, criterion, print_bool=False)
     return top1_avg, top5_avg, cvg_avg, sz_avg
 
-def experiment(modelname, datasetname, datasetpath, num_trials, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, criterion, predictor):
+def experiment(modelname, datasetname, datasetpath, model, logits, num_trials, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, criterion, predictor):
     ### Experiment logic
     naive_bool = predictor == 'Naive'
     if predictor in ['Naive', 'APS']:
         lamda = 0 # No regularization.
-
-    ### Data Loading
-    logits = get_logits_dataset(modelname, datasetname, datasetpath)
-
-    ### Instantiate and wrap model
-    model = get_model(modelname)
 
     ### Perform experiment
     df = pd.DataFrame(columns = ["model","predictor","alpha","coverage","size"])
@@ -96,10 +90,10 @@ if __name__ == "__main__":
     random.seed(seed)
 
     ### Configure experiment
-    modelnames = ['ResNet152']
+    modelname = 'ResNet152'
     alphas = [0.01, 0.05, 0.10]
     predictors = ['Naive', 'APS', 'RAPS']
-    params = list(itertools.product(modelnames, alphas, predictors))
+    params = list(itertools.product(alphas, predictors))
     m = len(params)
     datasetname = 'Imagenet'
     datasetpath = '/scratch/group/ilsvrc/val/'
@@ -113,12 +107,18 @@ if __name__ == "__main__":
     criterion = torch.nn.CrossEntropyLoss().cuda()
     cudnn.benchmark = True
 
+    ### Instantiate and wrap model
+    model = get_model(modelname)
+
+    ### Data Loading
+    logits = get_logits_dataset(modelname, datasetname, datasetpath)
+
     ### Perform the experiment
     df = pd.DataFrame(columns = ["model","predictor","alpha","coverage","size"])
     for i in range(m):
-        modelname, alpha, predictor = params[i]
+        alpha, predictor = params[i]
         print(f'Model: {modelname} | Desired coverage: {1-alpha} | Predictor: {predictor}')
-        out = experiment(modelname, datasetname, datasetpath, num_trials, params[i][1], kreg, lamda, randomized, n_data_conf, n_data_val, bsz, criterion, predictor) 
+        out = experiment(modelname, datasetname, datasetpath, model, logits, num_trials, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, criterion, predictor) 
         df = df.append(out, ignore_index=True) 
     plot_figure2(df) 
     

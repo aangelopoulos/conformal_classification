@@ -51,6 +51,7 @@ if __name__ == "__main__":
     model.eval()
     # Conformalize model
     model = ConformalModel(model, calib_loader, alpha=0.1, kreg=4, lamda=100)
+
     print("Model calibrated and conformalized! Now evaluate over remaining data.")
     validate(val_loader, model, criterion, print_bool=True)
 
