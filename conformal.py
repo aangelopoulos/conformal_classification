@@ -84,7 +84,7 @@ def platt(cmodel, calib_loader, max_iters=10, lr=0.01, epsilon=0.01):
 ### Precomputed-logit versions of the above functions.
 
 class ConformalModelLogits(nn.Module):
-    def __init__(self, model, calib_loader, alpha, kreg, lamda, randomized=True, naive=False):
+    def __init__(self, model, calib_loader, alpha=0.1, kreg=5, lamda=0.01, randomized=True, naive=False):
         super(ConformalModelLogits, self).__init__()
         self.model = model 
         self.alpha = alpha
