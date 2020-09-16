@@ -42,7 +42,7 @@ git clone https://github.com/aangelopoulos/conformal-classification
 cd conformal-classification
 conda env create -f environment.yml
 conda activate conformal
-python example.py
+python example.py 'path/to/imagenet/val/'
 ```
 If you'd like to use our codebase on your own model, first place this at the top of your file:
 ```
