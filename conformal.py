@@ -41,6 +41,7 @@ class ConformalModel(nn.Module):
 
         return logits, S
 
+# Computes the conformal calibration
 def conformal_calibration(cmodel, calib_loader):
     print("Conformal calibration")
     with torch.no_grad():
@@ -48,7 +49,6 @@ def conformal_calibration(cmodel, calib_loader):
         for x, targets in tqdm(calib_loader):
             logits = cmodel.model(x.cuda()).detach().cpu().numpy()
             scores = softmax(logits/cmodel.T.item(), axis=1)
-            #scores = (cmodel.model(x.cuda())/cmodel.T.item()).softmax(dim=1).detach().cpu().numpy()
 
             I, ordered, cumsum = sort_sum(scores)
 
@@ -61,6 +61,7 @@ def conformal_calibration(cmodel, calib_loader):
 
         return Qhat 
 
+# Temperature scaling
 def platt(cmodel, calib_loader, max_iters=10, lr=0.01, epsilon=0.01):
     print("Begin Platt scaling.")
     # Save logits so don't need to double compute them
@@ -130,13 +131,11 @@ def conformal_calibration_logits(cmodel, calib_loader):
         return Qhat 
 
 def platt_logits(cmodel, calib_loader, max_iters=10, lr=0.01, epsilon=0.01):
-    #print("Begin Platt scaling.")
     nll_criterion = nn.CrossEntropyLoss().cuda()
 
     T = nn.Parameter(torch.Tensor([1.3]).cuda())
 
     optimizer = optim.SGD([T], lr=lr)
-    #init_nll = nll_criterion(calib_loader.dataset.dataset.tensors[0].cuda()/T,calib_loader.dataset.dataset.tensors[1].long().cuda())
     for iter in range(max_iters):
         T_old = T.item()
         for x, targets in calib_loader:
@@ -149,18 +148,16 @@ def platt_logits(cmodel, calib_loader, max_iters=10, lr=0.01, epsilon=0.01):
             optimizer.step()
         if abs(T_old - T.item()) < epsilon:
             break
-    #final_nll = nll_criterion(calib_loader.dataset.dataset.tensors[0].cuda()/T,calib_loader.dataset.dataset.tensors[1].long().cuda())
-    #print(f"Optimal T={T.item()}")
     return T 
 
 ### CORE CONFORMAL INFERENCE FUNCTIONS
 
+# Generalized conditional quantile function.
 def gcq(scores, tau, I, ordered, cumsum, randomized=True):
     sizes_base = (cumsum <= tau).sum(axis=1) + 1  # 1 - 1001
     sizes_base = np.minimum(sizes_base, 1000) # 1-1000
 
     if randomized:
-        # TODO: Vectorize this
         V = np.zeros(sizes_base.shape)
         for i in range(sizes_base.shape[0]):
             V[i] = 1/ordered[i,sizes_base[i]-1]*(cumsum[i,sizes_base[i]-1]-tau) # -1 since sizes_base \in {1,...,1000}.
@@ -180,6 +177,7 @@ def gcq(scores, tau, I, ordered, cumsum, randomized=True):
 
     return S
 
+# Get the 'p-value'
 def get_tau(score, target, I, ordered, cumsum, randomized=True): # For one example
     idx = np.where(I==target)
     tau_nonrandom = cumsum[idx]
@@ -194,10 +192,11 @@ def get_tau(score, target, I, ordered, cumsum, randomized=True): # For one examp
     else:
         return U * ordered[idx] + cumsum[(idx[0],idx[1]-1)]
 
+# Gets the histogram of Taus. 
 def giq(scores,targets,I,ordered,cumsum,randomized=True):
     """
         Generalized inverse quantile conformity score function.
-        E from equation (7) in RSC. 
+        E from equation (7) in Romano, Sesia, Candes. 
         Find the minimum tau in [0, 1] such that the correct label enters.
     """
     E = -np.ones((scores.shape[0],))
