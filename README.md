@@ -67,7 +67,7 @@ Model calibrated and conformalized! Now evaluate over remaining data.
 N: 48000 | Time: 2.318 (2.401) | Loss: 0.7886 (0.8778) | Cvg@1: 0.773 (0.783) | Cvg@5: 0.945 (0.940) | Cvg@RAPS: 0.914 (0.902) | Size@RAPS: 4.242 (4.012)
 Complete!
 ```
-The values in parentheses are running averages. The preceding values are only for the most recent batch. The timing values will be different on your system, but the rest of the numbers should be exactly the same. 
+The values in parentheses are running averages. The preceding values are only for the most recent batch. The timing values will be different on your system, but the rest of the numbers should be exactly the same. On some systems, the evaluation may print over many lines. 
 
 The expected outputs of the experiments are stored in `experiments/outputs`, and they are exactly identical to the results reported in our paper. You can reproduce the results by executing `python table1.py`, `python figure2.py`, and `python figure4.py` after you have installed our dependencies.
 
@@ -75,7 +75,7 @@ The expected outputs of the experiments are stored in `experiments/outputs`, and
 
 `alpha` is the maximum proportion of errors you are willing to tolerate. The target coverage is therefore `1-alpha`. A smaller `alpha` will usually lead to larger sets, since the desired coverage is more stringent.
 
-`kreg` is the first class at which the RAPS penalty is applied. `kreg` should ideally be `1+kfixed`, where `kfixed` is the smallest fixed-size set at which your classifier achieves the coverage guarantee you want. In practice we have found it suffices for many models to pick `kreg=5`, but performance can be improved by optimizing `kreg`. The specific choice of `kreg` matters less for small values of `lamda`.
+`kreg` is the first class at which the RAPS penalty is applied. `kreg` should ideally be `kfixed-1`, where `kfixed` is the smallest fixed-size set at which your classifier achieves the coverage guarantee you want. In practice we have found it suffices for many models to pick `kreg=5`, but performance can be improved by optimizing `kreg`. The specific choice of `kreg` matters less for small values of `lamda`.
 
 `lamda` is the level of RAPS regularization. It is a nonnegative real number. Any `lamda` above 1 is equivalent. The larger `lamda` is, the more the RAPS sets shrink towards a fixed set size. We purposefully misspell lambda as `lamda` because of the conflicting Python keyword.
 
