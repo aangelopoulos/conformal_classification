@@ -98,8 +98,8 @@ if __name__ == "__main__":
     datasetname = 'Imagenet'
     datasetpath = '/scratch/group/ilsvrc/val/'
     num_trials = 100 
-    kreg = 4
-    lamda = 100 
+    kreg = 5 
+    lamda = 0.2 
     randomized = True
     n_data_conf = 20000
     n_data_val = 20000
