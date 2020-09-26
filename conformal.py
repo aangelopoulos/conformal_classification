@@ -6,7 +6,6 @@ import torch.optim as optim
 import time
 from tqdm import tqdm
 from utils import get_logits_targets, sort_sum
-import pdb
 
 # Conformalize a model with a calibration set.
 # Save it to a file in .cache/modelname
@@ -16,8 +15,8 @@ class ConformalModel(nn.Module):
         super(ConformalModel, self).__init__()
         self.model = model 
         self.alpha = alpha
-        self.msk = np.zeros((1, len(calib_loader.dataset.dataset.classes)))
-        self.msk[:, kreg:] += lamda
+        self.penalties = np.zeros((1, len(calib_loader.dataset.dataset.classes)))
+        self.penalties[:, kreg:] += lamda
         self.randomized=randomized
         self.T = torch.Tensor([1]) #initialize
         self.T, logits_loader = platt(self, calib_loader)
@@ -34,10 +33,7 @@ class ConformalModel(nn.Module):
 
             I, ordered, cumsum = sort_sum(scores)
 
-            ordered = ordered + self.msk
-            cumsum = cumsum + np.cumsum(self.msk, axis=1)
-
-            S = gcq(scores, self.Qhat, I=I, ordered=ordered, cumsum=cumsum, randomized=randomized)
+            S = gcq(scores, self.Qhat, I=I, ordered=ordered, cumsum=cumsum, penalties=self.penalties, randomized=randomized)
 
         return logits, S
 
@@ -52,10 +48,7 @@ def conformal_calibration(cmodel, calib_loader):
 
             I, ordered, cumsum = sort_sum(scores)
 
-            ordered = ordered + cmodel.msk
-            cumsum = cumsum + np.cumsum(cmodel.msk, axis=1)
-
-            E = np.concatenate((E,giq(scores,targets,I=I,ordered=ordered,cumsum=cumsum,randomized=cmodel.randomized)))
+            E = np.concatenate((E,giq(scores,targets,I=I,ordered=ordered,cumsum=cumsum,penalties=cmodel.penalties,randomized=cmodel.randomized)))
             
         Qhat = np.quantile(E,1-cmodel.alpha,interpolation='higher')
 
@@ -88,8 +81,8 @@ class ConformalModelLogits(nn.Module):
         super(ConformalModelLogits, self).__init__()
         self.model = model 
         self.alpha = alpha
-        self.msk = np.zeros((1, calib_loader.dataset[0][0].shape[0]))
-        self.msk[:, kreg:] += lamda
+        self.penalties = np.zeros((1, calib_loader.dataset[0][0].shape[0]))
+        self.penalties[:, kreg:] += lamda
         self.randomized=randomized
         self.T = platt_logits(self, calib_loader)
         self.Qhat = 1-alpha if naive else conformal_calibration_logits(self, calib_loader)
@@ -104,10 +97,7 @@ class ConformalModelLogits(nn.Module):
 
             I, ordered, cumsum = sort_sum(scores)
 
-            ordered = ordered + self.msk
-            cumsum = cumsum + np.cumsum(self.msk, axis=1)
-
-            S = gcq(scores, self.Qhat, I=I, ordered=ordered, cumsum=cumsum, randomized=randomized)
+            S = gcq(scores, self.Qhat, I=I, ordered=ordered, cumsum=cumsum, penalties=self.penalties, randomized=randomized)
 
         return logits, S
 
@@ -121,10 +111,7 @@ def conformal_calibration_logits(cmodel, calib_loader):
 
             I, ordered, cumsum = sort_sum(scores)
 
-            ordered = ordered + cmodel.msk
-            cumsum = cumsum + np.cumsum(cmodel.msk, axis=1)
-
-            E = np.concatenate((E,giq(scores,targets,I=I,ordered=ordered,cumsum=cumsum,randomized=cmodel.randomized)))
+            E = np.concatenate((E,giq(scores,targets,I=I,ordered=ordered,cumsum=cumsum,penalties=cmodel.penalties,randomized=cmodel.randomized)))
             
         Qhat = np.quantile(E,1-cmodel.alpha,interpolation='higher')
 
@@ -153,16 +140,18 @@ def platt_logits(cmodel, calib_loader, max_iters=10, lr=0.01, epsilon=0.01):
 ### CORE CONFORMAL INFERENCE FUNCTIONS
 
 # Generalized conditional quantile function.
-def gcq(scores, tau, I, ordered, cumsum, randomized=True):
-    sizes_base = (cumsum <= tau).sum(axis=1) + 1  # 1 - 1001
+def gcq(scores, tau, I, ordered, cumsum, penalties, randomized=True):
+    penalties_cumsum = np.cumsum(penalties, axis=1)
+    sizes_base = ((cumsum + penalties_cumsum) <= tau).sum(axis=1) + 1  # 1 - 1001
     sizes_base = np.minimum(sizes_base, 1000) # 1-1000
 
     if randomized:
         V = np.zeros(sizes_base.shape)
         for i in range(sizes_base.shape[0]):
-            V[i] = 1/ordered[i,sizes_base[i]-1]*(cumsum[i,sizes_base[i]-1]-tau) # -1 since sizes_base \in {1,...,1000}.
+            V[i] = 1/ordered[i,sizes_base[i]-1] * \
+                    (tau-(cumsum[i,sizes_base[i]-1]-ordered[i,sizes_base[i]-1])-penalties_cumsum[0,sizes_base[i]-1]) # -1 since sizes_base \in {1,...,1000}.
 
-        sizes = sizes_base - (np.random.random(V.shape) <= V).astype(int)
+        sizes = sizes_base - (np.random.random(V.shape) >= V).astype(int)
     else:
         sizes = sizes_base
 
@@ -178,7 +167,7 @@ def gcq(scores, tau, I, ordered, cumsum, randomized=True):
     return S
 
 # Get the 'p-value'
-def get_tau(score, target, I, ordered, cumsum, randomized=True): # For one example
+def get_tau(score, target, I, ordered, cumsum, penalty, randomized=True): # For one example
     idx = np.where(I==target)
     tau_nonrandom = cumsum[idx]
 
@@ -188,12 +177,12 @@ def get_tau(score, target, I, ordered, cumsum, randomized=True): # For one examp
     U = np.random.random()
 
     if idx == (0,0):
-        return U * tau_nonrandom 
+        return U * tau_nonrandom + penalty[0] 
     else:
-        return U * ordered[idx] + cumsum[(idx[0],idx[1]-1)]
+        return U * ordered[idx] + cumsum[(idx[0],idx[1]-1)] + (penalty[0:(idx[1][0]+1)]).sum()
 
 # Gets the histogram of Taus. 
-def giq(scores,targets,I,ordered,cumsum,randomized=True):
+def giq(scores, targets, I, ordered, cumsum, penalties, randomized=True):
     """
         Generalized inverse quantile conformity score function.
         E from equation (7) in Romano, Sesia, Candes. 
@@ -201,7 +190,7 @@ def giq(scores,targets,I,ordered,cumsum,randomized=True):
     """
     E = -np.ones((scores.shape[0],))
     for i in range(scores.shape[0]):
-        E[i] = get_tau(scores[i:i+1,:],targets[i].item(),I[i:i+1,:],ordered[i:i+1,:],cumsum[i:i+1,:], randomized=randomized)
+        E[i] = get_tau(scores[i:i+1,:],targets[i].item(),I[i:i+1,:],ordered[i:i+1,:],cumsum[i:i+1,:],penalties[0,:],randomized=randomized)
 
     return E
 
