@@ -62,9 +62,9 @@ The output of `example.py` with `seed=0` and `num_calib=2000` should be:
 ```
 Computing logits for model (only happens once).
 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 16/16 [00:33<00:00,  2.06s/it]
-Optimal T=1.2172279357910156
+Optimal T=1.217227816581726
 Model calibrated and conformalized! Now evaluate over remaining data.
-N: 48000 | Time: 2.318 (2.401) | Loss: 0.7886 (0.8778) | Cvg@1: 0.773 (0.783) | Cvg@5: 0.945 (0.940) | Cvg@RAPS: 0.914 (0.902) | Size@RAPS: 4.242 (4.012)
+N: 48000 | Time: 2.318 (2.401) | Loss: 0.7886 (0.8778) | Cvg@1: 0.773 (0.783) | Cvg@5: 0.945 (0.940) | Cvg@RAPS: 0.922 (0.903) | Size@RAPS: 4.133 (3.955)
 Complete!
 ```
 The values in parentheses are running averages. The preceding values are only for the most recent batch. The timing values will be different on your system, but the rest of the numbers should be exactly the same. On some systems, the evaluation may print over many lines. 
