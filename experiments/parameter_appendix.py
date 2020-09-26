@@ -13,6 +13,7 @@ import torch.backends.cudnn as cudnn
 import itertools
 from tqdm import tqdm
 import pandas as pd
+import pdb
 
 def trial(model, logits, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, criterion, naive_bool):
     logits_cal, logits_val = split2(logits, n_data_conf, n_data_val) # A new random split for every trial
@@ -52,38 +53,79 @@ def experiment(modelname, datasetname, datasetpath, num_trials, alpha, kreg, lam
     print('')
     return np.median(top1s), np.median(top5s), np.median(coverages), np.median(sizes), mad(top1s), mad(top5s), mad(coverages), mad(sizes)
 
-if __name__ == "__main__":
-    ### Fix randomness 
-    seed = 0
+def _fix_randomness(seed):
     np.random.seed(seed=seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     random.seed(seed)
 
+def _format_appendix_table(df):
+    kregs = df.kreg.unique()
+    lamdas = df["lambda"].unique()
+    num_kreg = len(kregs)
+    num_lamda = len(lamdas)
+    latex_table = '''\\begin{table}[t] \n 
+\\centering \n
+\\tiny \n
+\\begin{tabular}{l'''
+    for i in range(num_kreg):
+        latex_table += "c"
+
+    latex_table += '''} \n
+\\toprule\n
+$k_{reg} | \lambda$ & '''
+    for i in range(num_lamda):
+        latex_table += str(lamdas[i]) + ' '
+        if i < (num_lamda - 1):
+            latex_table += ' & '
+
+    latex_table += "\\\\\n"
+    latex_table += "\\midrule\n"
+
+    for kreg in kregs:
+        latex_table += str(kreg) + ' & '
+        for i in range(num_lamda):
+            latex_table += str(df[(df["lambda"] == lamdas[i]) & (df["kreg"] == kreg)]["Size"].item()) + ' '
+            if i < (num_lamda - 1):
+                latex_table += ' & '
+        latex_table += "\\\\\n"
+
+    latex_table += "\\bottomrule\n"
+    latex_table += "\\end{tabular}\n"
+    latex_table += "\\caption{Table caption.}\n"
+    latex_table += "\\label{table:parameters}\n"
+    latex_table += "\\end{table}\n"
+        
+    return latex_table
+
+if __name__ == "__main__":
+    ### Fix randomness 
+    _fix_randomness(seed=0)
+
     ### Configure experiment
-    # InceptionV3 can take a long time to load, depending on your version of scipy (see https://github.com/pytorch/vision/issues/1797). 
-    modelnames = ['ResNeXt101','ResNet152','ResNet101','ResNet50','ResNet18','DenseNet161','VGG16','Inception','ShuffleNet']
-    alphas = [0.05, 0.10]
-    predictors = ['Naive', 'APS', 'RAPS']
-    params = list(itertools.product(modelnames, alphas, predictors))
+    modelnames = ['ResNet152']
+    alphas = [0.10]
+    kregs = [1, 2, 3, 4, 5, 6, 10, 20, 50, 100, 500]
+    lamdas = [0, 0.0001, 0.001, 0.01, 0.02, 0.05, 0.2, 0.5, 0.7, 1.0]
+    predictors = ['RAPS']
+    params = list(itertools.product(modelnames, alphas, predictors,kregs, lamdas))
     m = len(params)
     datasetname = 'Imagenet'
     datasetpath = '/scratch/group/ilsvrc/val/'
-    num_trials = 100 
-    kreg = 5 
-    lamda = 0.2 
+    num_trials = 10
     randomized = True
-    n_data_conf = 20000
-    n_data_val = 20000
+    n_data_conf = 2000
+    n_data_val = 2000
     bsz = 64
     criterion = torch.nn.CrossEntropyLoss().cuda()
     cudnn.benchmark = True
 
     ### Perform the experiment
-    df = pd.DataFrame(columns = ["Model","Predictor","Top1","Top5","alpha","Coverage","Size"])
+    df = pd.DataFrame(columns = ["Model","Predictor","Top1","Top5","alpha","kreg","lambda","Coverage","Size"])
     for i in range(m):
-        modelname, alpha, predictor = params[i]
-        print(f'Model: {modelname} | Desired coverage: {1-alpha} | Predictor: {predictor}')
+        _fix_randomness(seed=0)
+        modelname, alpha, predictor, kreg, lamda = params[i]
+        print(f'Model: {modelname} | Desired coverage: {1-alpha} | kreg: {kreg} | lambda: {lamda} ')
 
         out = experiment(modelname, datasetname, datasetpath, num_trials, params[i][1], kreg, lamda, randomized, n_data_conf, n_data_val, bsz, criterion, predictor) 
         df = df.append({"Model": modelname,
@@ -91,12 +133,12 @@ if __name__ == "__main__":
                         "Top1": np.round(out[0],3),
                         "Top5": np.round(out[1],3),
                         "alpha": alpha,
+                        "kreg": kreg,
+                        "lambda": lamda,
                         "Coverage": np.round(out[2],3),
-                        "Size": 
-                        np.round(out[3],3)}, ignore_index=True) 
+                        "Size": np.round(out[3],3)}, ignore_index=True) 
 
     ### Print the TeX table
-    print(df.to_latex())
-    table = open("./outputs/exp_table1.tex", 'w')
-    table.write(df.to_latex())
+    table = open("./outputs/appendix_parameter_table.tex", 'w')
+    table.write(_format_appendix_table(df))
     table.close()

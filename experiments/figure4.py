@@ -121,7 +121,7 @@ if __name__ == "__main__":
     m = len(params)
     datasetname = 'Imagenet'
     datasetpath = '/scratch/group/ilsvrc/val/'
-    kreg = 4
+    kreg = 5 
     randomized = True
     n_data_conf = 20000
     n_data_val = 20000
