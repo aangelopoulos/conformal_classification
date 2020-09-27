@@ -53,7 +53,7 @@ Then create a holdout set for conformal calibration using a line like:
 
 [`calib, val = random_split(mydataset, [num_calib,total-num_calib])` ](https://github.com/aangelopoulos/conformal-classification/blob/cb2267a0fd127c27f61a7cd74f9519f6f2509e82/example.py#L38)
 
-Finally, you can choose `kreg` and `lamda` and conformalize your model with, e.g.,
+Finally, you can choose `kreg` and `lamda` and conformalize your pretrained `model` with, e.g.,
 
 [`model = ConformalModel(model, calib_loader, alpha=0.1, kreg=5, lamda=0.01)`](https://github.com/aangelopoulos/conformal-classification/blob/cb2267a0fd127c27f61a7cd74f9519f6f2509e82/example.py#L52)
 
