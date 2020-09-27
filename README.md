@@ -51,7 +51,7 @@ from utils.py import *
 ```
 Then create a holdout set for conformal calibration using a line like: 
 
-[`calib, val = random_split(mydataset, [num_calib,total-num_calib])` ](https://github.com/aangelopoulos/conformal-classification/blob/cb2267a0fd127c27f61a7cd74f9519f6f2509e82/example.py#L39)
+[`calib, val = random_split(mydataset, [num_calib,total-num_calib])` ](https://github.com/aangelopoulos/conformal-classification/blob/cb2267a0fd127c27f61a7cd74f9519f6f2509e82/example.py#L38)
 
 Finally, you can choose `kreg` and `lamda` and conformalize your model with, e.g.,
 
