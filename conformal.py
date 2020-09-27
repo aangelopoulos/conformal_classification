@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 import time
 from tqdm import tqdm
-from utils import get_logits_targets, sort_sum
+from .utils import get_logits_targets, sort_sum
 
 # Conformalize a model with a calibration set.
 # Save it to a file in .cache/modelname
