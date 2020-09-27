@@ -44,6 +44,7 @@ conda env create -f environment.yml
 conda activate conformal
 python example.py 'path/to/imagenet/val/'
 ```
+Look inside `example.py` for a minimal example that modifies a pretrained classifier to output 90% prediction sets.
 If you'd like to use our codebase on your own model, first place this at the top of your file:
 ```
 from conformal.py import *
