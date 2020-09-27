@@ -23,7 +23,7 @@
 <p>
     This codebase modifies any PyTorch classifier to output a <i>predictive set</i> which provably contains the true class with a probability you specify.
     It uses a method called Regularized Adaptive Prediction Sets (RAPS), which we introduce in our accompanying paper.
-    The procedure is as simple and fast as Platt scaling, but provides a formal guarantee for every model and dataset.
+    The procedure is as simple and fast as Platt scaling, but provides a formal finite-sample coverage guarantee for every model and dataset.
 </p>
 
 <figure>
