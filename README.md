@@ -3,8 +3,8 @@
 
 <p align="center">
     <a href="https://arxiv.org/abs/" alt="arXiv"> <img src="https://img.shields.io/badge/paper-arXiv-red" /> </a>
-    <a href="" alt="Python"> <img src="https://img.shields.io/badge/python-v3.6+-blue.svg" /> </a>
-    <a href="" alt="Dependencies"> <img src="https://img.shields.io/badge/dependencies-up%20to%20date-brightgreen.svg" /> </a>
+    <a href="https://people.eecs.berkeley.edu/%7Eangelopoulos/blog/posts/conformal-classification/" alt="website"> <img src="https://img.shields.io/badge/website-Berkeley-yellow" /> </a>
+    <a href="https://docs.conda.io/en/latest/miniconda.html" alt="package management"> <img src="https://img.shields.io/badge/conda-env-green" /> </a>
     <a href="https://opensource.org/licenses/MIT" alt="License"> <img src="https://img.shields.io/badge/license-MIT-blue.svg" /> </a>
 </p>
 
