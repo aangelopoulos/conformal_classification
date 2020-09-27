@@ -2,10 +2,10 @@
 <p align="center"><img width=50% src="https://github.com/aangelopoulos/conformal-classification/blob/master/media/text_conformal.svg"></p>
 
 <p align="center">
-    <a href="https://arxiv.org/abs/" alt="arXiv"> <img src="https://img.shields.io/badge/paper-arXiv-red" /> </a>
-    <a href="https://people.eecs.berkeley.edu/%7Eangelopoulos/blog/posts/conformal-classification/" alt="website"> <img src="https://img.shields.io/badge/website-Berkeley-yellow" /> </a>
-    <a href="https://docs.conda.io/en/latest/miniconda.html" alt="package management"> <img src="https://img.shields.io/badge/conda-env-green" /> </a>
-    <a href="https://opensource.org/licenses/MIT" alt="License"> <img src="https://img.shields.io/badge/license-MIT-blue.svg" /> </a>
+    <a style="text-decoration:none;" href="https://arxiv.org/abs/" alt="arXiv"> <img src="https://img.shields.io/badge/paper-arXiv-red" /> </a>
+    <a style="text-decoration:none;" href="https://people.eecs.berkeley.edu/%7Eangelopoulos/blog/posts/conformal-classification/" alt="website"> <img src="https://img.shields.io/badge/website-Berkeley-yellow" /> </a>
+    <a style="text-decoration:none;" href="https://docs.conda.io/en/latest/miniconda.html" alt="package management"> <img src="https://img.shields.io/badge/conda-env-green" /> </a>
+    <a style="text-decoration:none;" href="https://opensource.org/licenses/MIT" alt="License"> <img src="https://img.shields.io/badge/license-MIT-blue.svg" /> </a>
 </p>
 
 ## Paper 
