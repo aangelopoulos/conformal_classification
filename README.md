@@ -57,7 +57,7 @@ Finally, you can choose `kreg` and `lamda` and conformalize your model with, e.g
 
 [`model = ConformalModel(model, calib_loader, alpha=0.1, kreg=5, lamda=0.01)`](https://github.com/aangelopoulos/conformal-classification/blob/cb2267a0fd127c27f61a7cd74f9519f6f2509e82/example.py#L52)
 
-## Expected outputs
+## Reproducing Our Results
 The output of `example.py` with `seed=0` and `num_calib=2000` should be:
 ```
 Computing logits for model (only happens once).
