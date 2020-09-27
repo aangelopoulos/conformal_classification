@@ -51,11 +51,11 @@ from utils.py import *
 ```
 Then create a holdout set for conformal calibration using a line like: 
 
-[`calib, val = random_split(mydataset, [num_calib,total-num_calib])` ](https://github.com/aangelopoulos/conformal-classification/blob/b3823a924bbd039b60bf5a37e517ca87f598fdbe/example.py#L39)
+[`calib, val = random_split(mydataset, [num_calib,total-num_calib])` ](https://github.com/aangelopoulos/conformal-classification/blob/cb2267a0fd127c27f61a7cd74f9519f6f2509e82/example.py#L39)
 
 Finally, you can choose `kreg` and `lamda` and conformalize your model with, e.g.,
 
-[`model = ConformalModel(model, calib_loader, alpha=0.1, kreg=5, lamda=0.01)`](https://github.com/aangelopoulos/conformal-classification/blob/b3823a924bbd039b60bf5a37e517ca87f598fdbe/example.py#L53)
+[`model = ConformalModel(model, calib_loader, alpha=0.1, kreg=5, lamda=0.01)`](https://github.com/aangelopoulos/conformal-classification/blob/cb2267a0fd127c27f61a7cd74f9519f6f2509e82/example.py#L52)
 
 ## Expected outputs
 The output of `example.py` with `seed=0` and `num_calib=2000` should be:
