@@ -69,7 +69,7 @@ Complete!
 ```
 The values in parentheses are running averages. The preceding values are only for the most recent batch. The timing values will be different on your system, but the rest of the numbers should be exactly the same. On some systems, the evaluation may print over many lines. 
 
-The expected outputs of the experiments are stored in `experiments/outputs`, and they are exactly identical to the results reported in our paper. You can reproduce the results by executing `python table1.py`, `python figure2.py`, and `python figure4.py` after you have installed our dependencies.
+The expected outputs of the experiments are stored in `experiments/outputs`, and they are exactly identical to the results reported in our paper. You can reproduce the results by executing `python table1.py`, `python table2.py`, `python figure2.py`, `python figure4.py`, and `python parameter_appendix.py` after you have installed our dependencies. For table2, we used the `matched-frequencies` version of ImageNet-V2. 
 
 ## Picking `alpha`, `kreg`, and `lamda`
 
