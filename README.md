@@ -12,7 +12,7 @@
 ## Paper 
 [Uncertainty Sets for Image Classifiers using Conformal Prediction](https://arxiv.org/abs/)
 ```
-@article{angelopoulos2020event,
+@article{angelopoulos2020sets,
   title={Uncertainty Sets for Image Classifiers using Conformal Prediction},
   author={Angelopoulos, Anastasios N and Bates, Stephen and Malik, Jitendra and Jordan, Michael I},
   journal={arXiv preprint arXiv:},
