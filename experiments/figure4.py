@@ -4,6 +4,7 @@ from conformal import *
 from utils import *
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 from scipy.special import softmax
 import torch
 import torchvision
@@ -14,6 +15,7 @@ import itertools
 from tqdm import tqdm
 import pandas as pd
 import seaborn as sns
+import pdb
 
 # Plotting code
 def plot_figure4(df_big):
@@ -25,22 +27,36 @@ def plot_figure4(df_big):
         right_of_last_bin = 4 + float(d)/2 + 10 
         histbins = np.arange(left_of_first_bin, right_of_last_bin + d, d)
 
-        fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(10,1.5))
+        fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(10,1.5), gridspec_kw={'width_ratios': [2, 2]})
 
         for predictor in df.predictor.unique():
             axs[1].plot([],[]) # Hack colormap
 
         difficulties = {1: 'easy', 2: 'medium', 4: 'hard'}
 
+        to_plot = df[df.predictor=='RAPS']
+        difficulty_series = pd.Series(np.array(len(to_plot)*['']), index=to_plot.index)
         for topk in topks:
-            to_plot = df['size'][(df.topk >= topk[0]) & (df.topk <= topk[1])][df.predictor=='RAPS']
-            sns.distplot(list(to_plot),bins=histbins,hist=True,kde=False,rug=False,norm_hist=True,label=difficulties[int(topk[0])], hist_kws={"histtype":"step", "linewidth": 3, "alpha":0.5}, ax=axs[1])
+            difficulty_series[(to_plot.topk >= topk[0]) & (to_plot.topk <= topk[1])] = difficulties[int(topk[0])]
+        to_plot['difficulty'] = difficulty_series
 
-        axs[1].legend(title='difficulty', framealpha=0.95)
+        alpha_violin = 0.7
+        my_palette = ["#64e986b3", "#6699ccb3", "#c95a49b3"]
+        firstpatch = mpatches.Patch(color=my_palette[0], label='easy')
+        secondpatch = mpatches.Patch(color=my_palette[1], label='medium')
+        thirdpatch = mpatches.Patch(color=my_palette[2], label='hard')
+        vp = sns.violinplot(x='size', y='difficulty',data=to_plot.astype({'size':'float'}), order=['easy','medium','hard'], linewidth=0.0, scale='area', palette=my_palette, ax=axs[1])
+        for violin, alpha in zip(vp.collections[::2], [alpha_violin, alpha_violin, alpha_violin]):
+            violin.set_alpha(alpha)
+
+        #for topk in topks:
+            #to_plot = df['size'][(df.topk >= topk[0]) & (df.topk <= topk[1])][df.predictor=='RAPS']
+            #sns.distplot(list(to_plot),bins=histbins,hist=True,kde=False,rug=False,norm_hist=True,label=difficulties[int(topk[0])], hist_kws={"histtype":"step", "linewidth": 3, "alpha":0.5}, ax=axs[1])
+
+        axs[1].legend(title='difficulty', handles=[firstpatch, secondpatch, thirdpatch], labels=['easy','medium','hard'], framealpha=0.95)
         axs[1].set_xlabel('size')
         axs[1].set_xlim(left=-0.5,right=10.5)
-        axs[1].set_ylim(bottom=0,top=0.9)
-        axs[1].set_yticks([0,0.25,0.5,0.75])
+        axs[1].set_ylabel('')
         sns.despine(top=True,right=True,ax=axs[1])
 
         d = 1 

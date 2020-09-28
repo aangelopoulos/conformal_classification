@@ -1,0 +1,20 @@
+\begin{table}[t]
+\centering
+\tiny
+\begin{tabular}{lccccccccccccccc} 
+\toprule
+        & & \multicolumn{2}{c}{$\lambda={0}$}     & & \multicolumn{2}{c}{$\lambda={0.001}$}     & & \multicolumn{2}{c}{$\lambda={0.01}$}     & & \multicolumn{2}{c}{$\lambda={0.05}$}     & & \multicolumn{2}{c}{$\lambda={0.1}$}     & & \multicolumn{2}{c}{$\lambda={0.2}$}     & & \multicolumn{2}{c}{$\lambda={1}$}    \\ 
+         \cmidrule(r){3-4}     \cmidrule(r){5-6}     \cmidrule(r){7-8}     \cmidrule(r){9-10}     \cmidrule(r){11-12}     \cmidrule(r){13-14}     \cmidrule(r){15-16}    
+difficulty & count & cvg & sz    & cvg & sz    & cvg & sz    & cvg & sz    & cvg & sz    & cvg & sz    & cvg & sz    \\ 
+\midrule 
+1      & 109651  & 0.95 & 5.2   & 0.95 & 4.0   & 0.96 & 2.6   & 0.97 & 2.1   & 0.97 & 2.0   & 0.98 & 2.0   & 0.98 & 1.9  \\ 
+2 to 3      & 18115  & 0.78 & 15.7   & 0.79 & 10.6   & 0.81 & 6.0   & 0.83 & 4.2   & 0.84 & 3.9   & 0.86 & 3.7   & 0.85 & 3.5  \\ 
+4 to 6      & 4935  & 0.68 & 31.7   & 0.71 & 19.6   & 0.74 & 10.0   & 0.70 & 6.0   & 0.71 & 5.3   & 0.70 & 4.7   & 0.59 & 4.3  \\ 
+6 to 10      & 3430  & 0.62 & 37.8   & 0.66 & 22.7   & 0.62 & 11.3   & 0.41 & 6.4   & 0.28 & 5.4   & 0.14 & 5.0   & 0.00 & 4.5  \\ 
+10 to 100      & 4764  & 0.56 & 57.2   & 0.54 & 35.5   & 0.30 & 14.8   & 0.04 & 7.7   & 0.00 & 6.4   & 0.00 & 5.4   & 0.00 & 4.6  \\ 
+100 to 1000      & 544  & 0.23 & 95.5   & 0.01 & 59.9   & 0.00 & 18.8   & 0.00 & 9.1   & 0.00 & 7.0   & 0.00 & 5.9   & 0.00 & 4.7  \\ 
+\bottomrule
+\end{tabular}
+\caption{\textbf{Coverage and size conditional on difficulty.} We report coverage and size of \raps\ sets for ResNet-152 for $k_{reg}=5$ and varying $\lambda$.}
+\label{table:difficulty}
+\end{table}
