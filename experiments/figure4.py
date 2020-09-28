@@ -57,6 +57,7 @@ def plot_figure4(df_big):
         axs[1].set_xlabel('size')
         axs[1].set_xlim(left=-0.5,right=10.5)
         axs[1].set_ylabel('')
+        axs[1].get_yaxis().set_ticks([])
         sns.despine(top=True,right=True,ax=axs[1])
 
         d = 1 
