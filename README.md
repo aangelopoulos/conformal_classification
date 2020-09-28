@@ -95,7 +95,7 @@ The expected outputs of the experiments are stored in `experiments/outputs`, and
 
 `alpha` is the maximum proportion of errors you are willing to tolerate. The target coverage is therefore `1-alpha`. A smaller `alpha` will usually lead to larger sets, since the desired coverage is more stringent.
 
-`kreg` is the first class at which the RAPS penalty is applied. `kreg` should ideally be `kfixed-1`, where `kfixed` is the smallest fixed-size set at which your classifier achieves the coverage guarantee you want. In practice we have found it suffices for many models to pick `kreg=5`, but performance can be improved by optimizing `kreg`. The specific choice of `kreg` matters less for small values of `lamda`.
+`kreg` is the first class at which the RAPS penalty is applied. `kreg` should ideally be equal to `kfixed`, where `kfixed` is the smallest fixed-size set at which your classifier achieves the coverage guarantee you want. In practice we have found it suffices for many models to pick `kreg=5`, but performance can be improved by optimizing `kreg`. The specific choice of `kreg` matters less for small values of `lamda`.
 
 `lamda` is the level of RAPS regularization. It is a nonnegative real number. Any `lamda` above 1 is equivalent. The larger `lamda` is, the more the RAPS sets shrink towards a fixed set size. We purposefully misspell lambda as `lamda` because of the conflicting Python keyword.
 
