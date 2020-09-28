@@ -37,7 +37,24 @@
 
 <br>
 
+## Google Colab
+We have written a Colab which allows you to explore `RAPS` and conformal classification.
+You don't have to install anything to run the Colab.
+The notebook will lead you through constructing predictive sets from a pretrained model.
+You can also visualize examples from ImageNet along with their corresponding `RAPS` sets and play with the regularization parameters.
+
+You can access the colab by clicking the shield below.
+
+<p align="center">
+
+<a href="https://colab.research.google.com/github/aangelopoulos/conformal_classification/blob/master/example.ipynb" target="_parent"><img src="https://camo.githubusercontent.com/52feade06f2fecbf006889a904d221e6a730c194/68747470733a2f2f636f6c61622e72657365617263682e676f6f676c652e636f6d2f6173736574732f636f6c61622d62616467652e737667" alt="Open In Colab" data-canonical-src="https://colab.research.google.com/assets/colab-badge.svg"></a>
+
+</p>
+
 ## Usage
+If you'd like to use our code in your own projects and reproduce our experiments, we provide the tools below.
+Note that although our codebase isn't a package, it's easy to use it like a package, and we do so in the Colab notebook above.
+
 From the root directory, install the dependencies and run our example by executing:
 ```
 git clone https://github.com/aangelopoulos/conformal-classification
