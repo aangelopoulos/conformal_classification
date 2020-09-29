@@ -43,7 +43,7 @@ You don't have to install anything to run the Colab.
 The notebook will lead you through constructing predictive sets from a pretrained model.
 You can also visualize examples from ImageNet along with their corresponding `RAPS` sets and play with the regularization parameters.
 
-You can access the colab by clicking the shield below.
+You can access the Colab by clicking the shield below.
 
 <p align="center">
 
