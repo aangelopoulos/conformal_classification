@@ -18,28 +18,28 @@ import seaborn as sns
 import pdb
 
 # Plotting code
-def difficulty_table(df_big):
+def adaptiveness_table(df_big):
 
-    topks = [[1,1],[2,3],[4,6],[7,10],[11,100],[101,1000]]
+    sizes = [[0,1],[2,3],[4,6],[7,10],[11,100],[101,1000]]
 
     tbl = ""
     tbl += "\\begin{table}[t]\n"
     tbl += "\\centering\n"
     tbl += "\\tiny\n"
-    tbl += "\\begin{tabular}{lc"
+    tbl += "\\begin{tabular}{l"
 
     lamdaunique = df_big.lamda.unique()
 
-    multicol_line = "       & " 
+    multicol_line = "        " 
     midrule_line = "        "
-    label_line = "difficulty & count "
+    label_line = "size "
 
     for i in range(len(lamdaunique)):
-        j = 2*i 
-        tbl += "cc"
-        multicol_line += (" & \multicolumn{2}{c}{$\lambda={" + str(lamdaunique[i]) + "}$}    ")
-        midrule_line += (" \cmidrule(r){" + str(j+1+2) + "-" + str(j+2+2) + "}    ")
-        label_line += "& cvg & sz    "
+        j = 3*i 
+        tbl += "ccc"
+        multicol_line += (" & \multicolumn{3}{c}{$\lambda={" + str(lamdaunique[i]) + "}$}    ")
+        midrule_line += (" \cmidrule(r){" + str(j+2) + "-" + str(j+2+2) + "}    ")
+        label_line += "&cnt & cvg & diff    "
 
     tbl += "} \n"
     tbl += "\\toprule\n"
@@ -49,26 +49,34 @@ def difficulty_table(df_big):
     
     tbl = tbl + multicol_line + midrule_line + label_line
     tbl += "\\midrule \n"
-    for topk in topks:
-        if topk[0] == topk[1]:
-            tbl += str(topk[0]) + "     "
-        else:
-            tbl += str(topk[0]) + " to " + str(topk[1]) + "     "
-        df = df_big[(df_big.topk >= topk[0]) & (df_big.topk <= topk[1])]
 
-        tbl += f" & {int(len(df)/len(lamdaunique))} "
+    #DEBUG
+    total_coverages = {lamda:0 for lamda in lamdaunique}
+    for sz in sizes:
+        if sz[0] == sz[1]:
+            tbl += str(sz[0]) + "     "
+        else:
+            tbl += str(sz[0]) + " to " + str(sz[1]) + "     "
+        df = df_big[(df_big['size'] >= sz[0]) & (df_big['size'] <= sz[1])]
+
         for lamda in lamdaunique:
             df_small = df[df.lamda == lamda]
+            if(len(df_small)==0):
+                tbl += f" & 0 & & "
+                continue
             cvg = len(df_small[df_small.topk <= df_small['size']])/len(df_small)
-            sz = df_small['size'].mean()
-            tbl +=  f" & {cvg:.2f} & {sz:.1f}  "
+            diff = df_small['topk'].mean()
+            total_coverages[lamda] += cvg * len(df_small)/len(df_big)*len(lamdaunique)
+            tbl +=  f" & {len(df_small)} & {cvg:.2f} & {diff:.1f}  "
 
         tbl += "\\\\ \n"
     tbl += "\\bottomrule\n"
     tbl += "\\end{tabular}\n"
-    tbl += "\\caption{\\textbf{Coverage and size conditional on difficulty.} We report coverage and size of \\raps\ sets for ResNet-152 for $k_{reg}=5$ and varying $\lambda$.}\n"
-    tbl += "\\label{table:difficulty}\n"
+    tbl += "\\caption{\\textbf{Coverage and difficulty conditional on set size.} We report average coverage and difficulty of images stratified by the size of the set output by a conformalized ResNet-152 for $k_{reg}=5$ and varying $\lambda$.}\n"
+    tbl += "\\label{table:adaptiveness}\n"
     tbl += "\\end{table}\n"
+
+    print(total_coverages)
 
     return tbl
 
@@ -116,6 +124,7 @@ def sizes_topk(modelname, datasetname, datasetpath, alpha, kreg, lamda, randomiz
     return df
 
 def _fix_randomness(seed=0):
+    ### Fix randomness 
     np.random.seed(seed=seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
@@ -126,7 +135,7 @@ if __name__ == "__main__":
     modelnames = ['ResNet152']
     alphas = [0.1]
     predictors = ['RAPS']
-    lamdas = [0, 0.001, 0.01, 0.05, 0.1, 0.2, 1] 
+    lamdas = [0, 0.001, 0.01, 0.1, 1] 
     params = list(itertools.product(modelnames, alphas, predictors, lamdas))
     m = len(params)
     datasetname = 'Imagenet'
@@ -146,9 +155,9 @@ if __name__ == "__main__":
         out = sizes_topk(modelname, datasetname, datasetpath, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, predictor)
         df = df.append(out, ignore_index=True) 
 
-    tbl = difficulty_table(df)
+    tbl = adaptiveness_table(df)
     print(tbl)
     
-    table = open("./outputs/difficulty_table.tex", 'w')
+    table = open("./outputs/adaptiveness_table.tex", 'w')
     table.write(tbl)
     table.close()
