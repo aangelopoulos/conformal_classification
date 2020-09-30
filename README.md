@@ -64,7 +64,8 @@ conda activate conformal
 python example.py 'path/to/imagenet/val/'
 ```
 Look inside `example.py` for a minimal example that modifies a pretrained classifier to output 90% prediction sets.
-If you'd like to use our codebase on your own model, first place this at the top of your file:
+
+If you'd like to use our codebase on **your own model**, first place this at the top of your file:
 ```
 from conformal.py import *
 from utils.py import *
@@ -76,6 +77,8 @@ Then create a holdout set for conformal calibration using a line like:
 Finally, you can choose `kreg` and `lamda` and conformalize your pretrained `model` with, e.g.,
 
 [`model = ConformalModel(model, calib_loader, alpha=0.1, kreg=5, lamda=0.01)`](https://github.com/aangelopoulos/conformal-classification/blob/cb2267a0fd127c27f61a7cd74f9519f6f2509e82/example.py#L52)
+
+See the discussion below for picking `alpha`, `kreg`, and `lamda`.
 
 ## Reproducing Our Results
 The output of `example.py` with `seed=0` and `num_calib=2000` should be:
