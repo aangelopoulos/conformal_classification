@@ -7,7 +7,6 @@
     <a style="text-decoration:none !important;" href="https://docs.conda.io/en/latest/miniconda.html" alt="package management"> <img src="https://img.shields.io/badge/conda-env-green" /> </a>
     <a style="text-decoration:none !important;" href="https://opensource.org/licenses/MIT" alt="License"> <img src="https://img.shields.io/badge/license-MIT-blue.svg" /> </a>
     <a href="https://colab.research.google.com/github/aangelopoulos/conformal_classification/blob/master/example.ipynb" target="_parent"><img src="https://camo.githubusercontent.com/52feade06f2fecbf006889a904d221e6a730c194/68747470733a2f2f636f6c61622e72657365617263682e676f6f676c652e636f6d2f6173736574732f636f6c61622d62616467652e737667" alt="Open In Colab" data-canonical-src="https://colab.research.google.com/assets/colab-badge.svg"></a>
-    <a href="https://twitter.com/ml_angelopoulos?ref_src=twsrc%5Etfw" class="twitter-follow-button" data-show-count="false">Follow @ml_angelopoulos</a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 </p>
 
 ## Paper 
