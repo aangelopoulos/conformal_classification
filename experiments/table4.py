@@ -25,7 +25,7 @@ def adaptiveness_table(df_big):
     tbl = ""
     tbl += "\\begin{table}[t]\n"
     tbl += "\\centering\n"
-    tbl += "\\tiny\n"
+    tbl += "\\small\n"
     tbl += "\\begin{tabular}{l"
 
     lamdaunique = df_big.lamda.unique()
@@ -35,11 +35,11 @@ def adaptiveness_table(df_big):
     label_line = "size "
 
     for i in range(len(lamdaunique)):
-        j = 3*i 
-        tbl += "ccc"
-        multicol_line += (" & \multicolumn{3}{c}{$\lambda={" + str(lamdaunique[i]) + "}$}    ")
-        midrule_line += (" \cmidrule(r){" + str(j+2) + "-" + str(j+2+2) + "}    ")
-        label_line += "&cnt & cvg & diff    "
+        j = 2*i 
+        tbl += "cc"
+        multicol_line += (" & \multicolumn{2}{c}{$\lambda={" + str(lamdaunique[i]) + "}$}    ")
+        midrule_line += (" \cmidrule(r){" + str(j+1+1) + "-" + str(j+2+1) + "}    ")
+        label_line += "&cnt & cvg     "
 
     tbl += "} \n"
     tbl += "\\toprule\n"
@@ -62,17 +62,18 @@ def adaptiveness_table(df_big):
         for lamda in lamdaunique:
             df_small = df[df.lamda == lamda]
             if(len(df_small)==0):
-                tbl += f" & 0 & & "
+                tbl += f" & 0 & "
                 continue
             cvg = len(df_small[df_small.topk <= df_small['size']])/len(df_small)
-            diff = df_small['topk'].mean()
+            #diff = df_small['topk'].mean()
             total_coverages[lamda] += cvg * len(df_small)/len(df_big)*len(lamdaunique)
-            tbl +=  f" & {len(df_small)} & {cvg:.2f} & {diff:.1f}  "
+            tbl +=  f" & {len(df_small)} & {cvg:.2f} "
+            #tbl +=  f" & {len(df_small)} & {cvg:.2f} & {diff:.1f}  "
 
         tbl += "\\\\ \n"
     tbl += "\\bottomrule\n"
     tbl += "\\end{tabular}\n"
-    tbl += "\\caption{\\textbf{Coverage and difficulty conditional on set size.} We report average coverage and difficulty of images stratified by the size of the set output by a conformalized ResNet-152 for $k_{reg}=5$ and varying $\lambda$.}\n"
+    tbl += "\\caption{\\textbf{Coverage conditional on set size.} We report average coverage of images stratified by the size of the set output by a conformalized ResNet-152 for $k_{reg}=5$ and varying $\lambda$.}\n"
     tbl += "\\label{table:adaptiveness}\n"
     tbl += "\\end{table}\n"
 

@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(description='Conformalize Torchvision Model on 
 parser.add_argument('data', metavar='IMAGENETVALDIR', help='path to Imagenet Val')
 parser.add_argument('--batch_size', metavar='BSZ', help='batch size', default=128)
 parser.add_argument('--num_workers', metavar='NW', help='number of workers', default=0)
-parser.add_argument('--num_calib', metavar='NCALIB', help='number of calibration points', default=2000)
+parser.add_argument('--num_calib', metavar='NCALIB', help='number of calibration points', default=10000)
 parser.add_argument('--seed', metavar='SEED', help='random seed', default=0)
 
 if __name__ == "__main__":
@@ -41,17 +41,20 @@ if __name__ == "__main__":
     calib_loader = torch.utils.data.DataLoader(imagenet_calib_data, batch_size=args.batch_size, shuffle=True, pin_memory=True)
     val_loader = torch.utils.data.DataLoader(imagenet_val_data, batch_size=args.batch_size, shuffle=True, pin_memory=True)
 
-    criterion = torch.nn.CrossEntropyLoss().cuda()
     cudnn.benchmark = True
 
     # Get the model 
     model = torchvision.models.resnet152(pretrained=True,progress=True).cuda()
     model = torch.nn.DataParallel(model) 
     model.eval()
+
+    # optimize for 'size' or 'adaptiveness'
+    lamda_criterion = 'adaptiveness'
+
     # Conformalize model
-    model = ConformalModel(model, calib_loader, alpha=0.1, kreg=5, lamda=0.01)
+    model = ConformalModel(model, calib_loader, alpha=0.1, lamda_criterion=lamda_criterion)
 
     print("Model calibrated and conformalized! Now evaluate over remaining data.")
-    validate(val_loader, model, criterion, print_bool=True)
+    validate(val_loader, model, print_bool=True)
 
     print("Complete!")

@@ -19,46 +19,12 @@ import pdb
 
 # Plotting code
 def plot_figure4(df_big):
-    for lamda in df_big.lamda.unique():
+    fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(10,1.8))
+    lams_unique = df_big.lamda.unique()
+    lams_unique.sort()
+    for i in range(len(lams_unique)):
+        lamda = lams_unique[i]
         df = df_big[df_big.lamda == lamda]
-        topks = [[1,1],[2,3],[4,1000]]
-        d = 1 
-        left_of_first_bin = 1 - float(d)/2 - 1 # Include 0
-        right_of_last_bin = 4 + float(d)/2 + 10 
-        histbins = np.arange(left_of_first_bin, right_of_last_bin + d, d)
-
-        fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(10,1.5), gridspec_kw={'width_ratios': [2, 2]})
-
-        for predictor in df.predictor.unique():
-            axs[1].plot([],[]) # Hack colormap
-
-        difficulties = {1: 'easy', 2: 'medium', 4: 'hard'}
-
-        to_plot = df[df.predictor=='RAPS']
-        difficulty_series = pd.Series(np.array(len(to_plot)*['']), index=to_plot.index)
-        for topk in topks:
-            difficulty_series[(to_plot.topk >= topk[0]) & (to_plot.topk <= topk[1])] = difficulties[int(topk[0])]
-        to_plot['difficulty'] = difficulty_series
-
-        alpha_violin = 0.7
-        my_palette = ["#64e986b3", "#6699ccb3", "#c95a49b3"]
-        firstpatch = mpatches.Patch(color=my_palette[0], label='easy')
-        secondpatch = mpatches.Patch(color=my_palette[1], label='medium')
-        thirdpatch = mpatches.Patch(color=my_palette[2], label='hard')
-        vp = sns.violinplot(x='size', y='difficulty',data=to_plot.astype({'size':'float'}), order=['easy','medium','hard'], linewidth=0.0, scale='area', palette=my_palette, ax=axs[1])
-        for violin, alpha in zip(vp.collections[::2], [alpha_violin, alpha_violin, alpha_violin]):
-            violin.set_alpha(alpha)
-
-        #for topk in topks:
-            #to_plot = df['size'][(df.topk >= topk[0]) & (df.topk <= topk[1])][df.predictor=='RAPS']
-            #sns.distplot(list(to_plot),bins=histbins,hist=True,kde=False,rug=False,norm_hist=True,label=difficulties[int(topk[0])], hist_kws={"histtype":"step", "linewidth": 3, "alpha":0.5}, ax=axs[1])
-
-        axs[1].legend(title='difficulty', handles=[firstpatch, secondpatch, thirdpatch], labels=['easy','medium','hard'], framealpha=0.95)
-        axs[1].set_xlabel('size')
-        axs[1].set_xlim(left=-0.5,right=10.5)
-        axs[1].set_ylabel('')
-        axs[1].get_yaxis().set_ticks([])
-        sns.despine(top=True,right=True,ax=axs[1])
 
         d = 1 
         left_of_first_bin = - float(d)/2 # Include 0
@@ -67,24 +33,23 @@ def plot_figure4(df_big):
 
         for predictor in ['Naive','APS','RAPS']:
             to_plot = df['size'][df.predictor==predictor]
-            sns.distplot(list(to_plot),bins=histbins,hist=True,kde=False,rug=False,norm_hist=True,label=predictor, hist_kws={"histtype":"step", "linewidth": 3, "alpha":0.5}, ax=axs[0])
+            sns.distplot(list(to_plot),bins=histbins,hist=True,kde=False,rug=False,norm_hist=True,label=predictor, hist_kws={"histtype":"step", "linewidth": 2, "alpha":0.5}, ax=axs[i])
 
-        sns.despine(top=True,right=True,ax=axs[0])
-        axs[0].set_xlabel('size')
-        axs[0].legend(title='method', framealpha=0.95)
-        axs[0].set_yscale('log')
-        axs[0].set_yticks([0.1,0.01,0.001])
-        axs[0].set_ylabel('frequency')
-        axs[0].set_ylim(top=0.5)
+        sns.despine(top=True,right=True,ax=axs[i])
+        axs[i].set_xlabel('size', fontsize=12)
+        axs[i].legend(title='method', framealpha=0.95)
+        axs[i].set_yscale('log')
+        axs[i].set_yticks([0.1,0.01,0.001])
+        axs[i].set_ylabel('', fontsize=12)
+        axs[i].set_ylim(top=0.5)
 
-        if not lamda == df_big.lamda.unique().max():
-            axs[0].get_legend().remove()
-            axs[1].get_legend().remove()
+        if not lamda == lams_unique.max():
+            axs[i].get_legend().remove()
 
-        fig.suptitle(f'λ = {lamda}')
-
-        plt.tight_layout(rect=[0, 0.03, 1, 0.93])
-        plt.savefig(f'./outputs/histograms_figure4_{lamda}.pdf')
+        axs[i].text(40,0.07, f'λ={lamda}')
+        plt.tight_layout(rect=[0.03, 0.05, 0.95, 0.93])
+    axs[0].set_ylabel('frequency', fontsize=12)
+    plt.savefig(f'./outputs/noviolin_histograms_figure4.pdf')
 
 # Returns a dataframe with:
 # 1) Set sizes for all test-time examples.

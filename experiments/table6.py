@@ -45,8 +45,8 @@ def make_table(df, alpha):
 
     table += "\\bottomrule \n"
     table += "\\end{tabular} \n"
-    table += "\\caption{\\textbf{Results on Imagenet-V2.} We report coverage and size of the optimal, randomized fixed sets, \\naive, \\aps,\ and \\raps\ sets for nine different Imagenet classifiers. The median-of-means for each column is reported over 100 different trials at the 10\% level. See Section~\\ref{subsec:imagenet-v2} for full details.} \n" 
-    table += "\\label{table:imagenet-v2} \n"
+    table += "\\caption{\\textbf{Results on Imagenet-V2.} We report coverage and size of the optimal, randomized fixed sets, \\naive, \\aps,\ and \\raps\ sets for nine different Imagenet classifiers. The median-of-means for each column is reported over 100 different trials at the 5\% level. See Section~\\ref{subsec:imagenet-v2} for full details.} \n" 
+    table += "\\label{table:imagenet-v2-005} \n"
     table += "\\end{table} \n" 
     return table
 
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     torch.cuda.manual_seed(seed)
     random.seed(seed)
     cache_fname = "./.cache/imagenet_v2_df.csv"
-    alpha_table = 0.1
+    alpha_table = 0.05
     try:
         df = pd.read_csv(cache_fname)
     except:
@@ -71,12 +71,12 @@ if __name__ == "__main__":
         m = len(params)
         datasetname = 'ImagenetV2'
         datasetpath = './data/imagenetv2-matched-frequency/'
-        num_trials = 1 
+        num_trials = 100 
         kreg = None 
         lamda = None 
         randomized = True
         n_data_conf = 5000 
-        n_data_val = 5000
+        n_data_val = 5000 
         pct_paramtune = 0.33
         bsz = 32 
         cudnn.benchmark = True
