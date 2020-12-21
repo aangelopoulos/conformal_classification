@@ -15,7 +15,7 @@ from tqdm import tqdm
 import pandas as pd
 import pdb
 
-def trial(model, logits, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, criterion, naive_bool):
+def trial(model, logits, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, naive_bool):
     logits_cal, logits_val = split2(logits, n_data_conf, n_data_val) # A new random split for every trial
     # Prepare the loaders
     loader_cal = torch.utils.data.DataLoader(logits_cal, batch_size = bsz, shuffle=False, pin_memory=True)
@@ -23,10 +23,10 @@ def trial(model, logits, alpha, kreg, lamda, randomized, n_data_conf, n_data_val
     # Conformalize the model
     conformal_model = ConformalModelLogits(model, loader_cal, alpha=alpha, kreg=kreg, lamda=lamda, randomized=randomized, naive=naive_bool)
     # Collect results
-    top1_avg, top5_avg, cvg_avg, sz_avg = validate(loader_val, conformal_model, criterion, print_bool=False)
+    top1_avg, top5_avg, cvg_avg, sz_avg = validate(loader_val, conformal_model, print_bool=False)
     return top1_avg, top5_avg, cvg_avg, sz_avg
 
-def experiment(modelname, datasetname, datasetpath, num_trials, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, criterion, predictor):
+def experiment(modelname, datasetname, datasetpath, num_trials, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, predictor):
     ### Experiment logic
     naive_bool = predictor == 'Naive'
     if predictor in ['Naive', 'APS']:
@@ -44,7 +44,7 @@ def experiment(modelname, datasetname, datasetpath, num_trials, alpha, kreg, lam
     coverages = np.zeros((num_trials,))
     sizes = np.zeros((num_trials,))
     for i in tqdm(range(num_trials)):
-        top1_avg, top5_avg, cvg_avg, sz_avg = trial(model, logits, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, criterion, naive_bool)
+        top1_avg, top5_avg, cvg_avg, sz_avg = trial(model, logits, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, naive_bool)
         top1s[i] = top1_avg
         top5s[i] = top5_avg
         coverages[i] = cvg_avg
@@ -117,7 +117,6 @@ if __name__ == "__main__":
     n_data_conf = 2000
     n_data_val = 2000
     bsz = 64
-    criterion = torch.nn.CrossEntropyLoss().cuda()
     cudnn.benchmark = True
 
     ### Perform the experiment
@@ -127,7 +126,7 @@ if __name__ == "__main__":
         modelname, alpha, predictor, kreg, lamda = params[i]
         print(f'Model: {modelname} | Desired coverage: {1-alpha} | kreg: {kreg} | lambda: {lamda} ')
 
-        out = experiment(modelname, datasetname, datasetpath, num_trials, params[i][1], kreg, lamda, randomized, n_data_conf, n_data_val, bsz, criterion, predictor) 
+        out = experiment(modelname, datasetname, datasetpath, num_trials, params[i][1], kreg, lamda, randomized, n_data_conf, n_data_val, bsz, predictor) 
         df = df.append({"Model": modelname,
                         "Predictor": predictor,
                         "Top1": np.round(out[0],3),

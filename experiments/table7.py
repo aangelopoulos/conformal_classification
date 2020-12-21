@@ -3,10 +3,10 @@ sys.path.insert(1, os.path.join(sys.path[0], '..'))
 from conformal import * 
 from utils import *
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 from scipy.special import softmax
+from scipy.stats import median_absolute_deviation as mad
 import torch
+import torch.utils.data as tdata
 import torchvision
 import torchvision.transforms as tf
 import random
@@ -14,141 +14,91 @@ import torch.backends.cudnn as cudnn
 import itertools
 from tqdm import tqdm
 import pandas as pd
-import seaborn as sns
-import pdb
+from table1 import trial, experiment
 
-# Plotting code
-def difficulty_table(df_big):
+def make_table(df, alpha):
+    round_to_n = lambda x, n: np.round(x, -int(np.floor(np.log10(x))) + (n - 1)) # Rounds to sig figs
+    df = df[df.alpha == alpha]
+    table = ""
+    table += "\\begin{table}[t] \n"
+    table += "\\centering \n"
+    table += "\\small \n"
+    table += "\\begin{tabular}{lcccccccccc} \n"
+    table += "\\toprule \n"
+    table += " & \multicolumn{2}{c}{Accuracy}  & \multicolumn{4}{c}{Coverage} & \multicolumn{4}{c}{Size} \\\\ \n"
+    table += "\cmidrule(r){2-3}  \cmidrule(r){4-7}  \cmidrule(r){8-11} \n"
+    table += "Model & Top-1 & Top-5 & Top K & Naive & APS & RAPS & Top K & Naive & APS & RAPS \\\\ \n"
+    table += "\\midrule \n"
+    for model in df.Model.unique():
+        df_model = df[df.Model == model]
+        table += f" {model} & "
+        table += f" {np.round(df_model.Top1.mean(), 3)} & "
+        table += f" {np.round(df_model.Top5.mean(), 3)} & "
+        table += str(  round_to_n(df_model.Coverage[df_model.Predictor == "Fixed"].item(), 3)  ) + " & "
+        table += str(  round_to_n(df_model.Coverage[df_model.Predictor == "Naive"].item(), 3)  ) + " & "
+        table += str(  round_to_n(df_model.Coverage[df_model.Predictor == "APS"].item(), 3)    ) + " & "
+        table += str(  round_to_n(df_model.Coverage[df_model.Predictor == "RAPS"].item(), 3)   ) + " & "
+        table += str(  round_to_n(df_model["Size"][df_model.Predictor == "Fixed"].item(), 3)   ) + " & "
+        table += str(  round_to_n(df_model["Size"][df_model.Predictor == "Naive"].item(), 3)   ) + " & "
+        table += str(  round_to_n(df_model["Size"][df_model.Predictor == "APS"].item(), 3)   ) + " & "
+        table += str(  round_to_n(df_model["Size"][df_model.Predictor == "RAPS"].item(), 3)   ) + " \\\\ \n"
 
-    topks = [[1,1],[2,3],[4,6],[7,10],[11,100],[101,1000]]
+    table += "\\bottomrule \n"
+    table += "\\end{tabular} \n"
+    table += "\\caption{\\textbf{Results on Imagenet-V2.} We report coverage and size of the optimal, randomized fixed sets, \\naive, \\aps,\ and \\raps\ sets for nine different Imagenet classifiers. The median-of-means for each column is reported over 100 different trials at the 5\% level. See Section~\\ref{subsec:imagenet-v2} for full details.} \n" 
+    table += "\\label{table:imagenet-v2-005} \n"
+    table += "\\end{table} \n" 
+    return table
 
-    tbl = ""
-    tbl += "\\begin{table}[t]\n"
-    tbl += "\\centering\n"
-    tbl += "\\tiny\n"
-    tbl += "\\begin{tabular}{lc"
-
-    lamdaunique = df_big.lamda.unique()
-
-    multicol_line = "       & " 
-    midrule_line = "        "
-    label_line = "difficulty & count "
-
-    for i in range(len(lamdaunique)):
-        j = 2*i 
-        tbl += "cc"
-        multicol_line += (" & \multicolumn{2}{c}{$\lambda={" + str(lamdaunique[i]) + "}$}    ")
-        midrule_line += (" \cmidrule(r){" + str(j+1+2) + "-" + str(j+2+2) + "}    ")
-        label_line += "& cvg & sz    "
-
-    tbl += "} \n"
-    tbl += "\\toprule\n"
-    multicol_line += "\\\\ \n"
-    midrule_line += "\n"
-    label_line += "\\\\ \n"
-    
-    tbl = tbl + multicol_line + midrule_line + label_line
-    tbl += "\\midrule \n"
-    for topk in topks:
-        if topk[0] == topk[1]:
-            tbl += str(topk[0]) + "     "
-        else:
-            tbl += str(topk[0]) + " to " + str(topk[1]) + "     "
-        df = df_big[(df_big.topk >= topk[0]) & (df_big.topk <= topk[1])]
-
-        tbl += f" & {int(len(df)/len(lamdaunique))} "
-        for lamda in lamdaunique:
-            df_small = df[df.lamda == lamda]
-            cvg = len(df_small[df_small.topk <= df_small['size']])/len(df_small)
-            sz = df_small['size'].mean()
-            tbl +=  f" & {cvg:.2f} & {sz:.1f}  "
-
-        tbl += "\\\\ \n"
-    tbl += "\\bottomrule\n"
-    tbl += "\\end{tabular}\n"
-    tbl += "\\caption{\\textbf{Coverage and size conditional on difficulty.} We report coverage and size of \\raps\ sets for ResNet-152 for $k_{reg}=5$ and varying $\lambda$.}\n"
-    tbl += "\\label{table:difficulty}\n"
-    tbl += "\\end{table}\n"
-
-    return tbl
-
-# Returns a dataframe with:
-# 1) Set sizes for all test-time examples.
-# 2) topk for each example, where topk means which score was correct.
-def sizes_topk(modelname, datasetname, datasetpath, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, predictor):
-    _fix_randomness()
-    ### Experiment logic
-    naive_bool = predictor == 'Naive'
-    lamda_predictor = lamda
-    if predictor in ['Naive', 'APS']:
-        lamda_predictor = 0 # No regularization.
-
-    ### Data Loading
-    logits = get_logits_dataset(modelname, datasetname, datasetpath)
-    logits_cal, logits_val = split2(logits, n_data_conf, n_data_val) # A new random split for every trial
-    # Prepare the loaders
-    loader_cal = torch.utils.data.DataLoader(logits_cal, batch_size = bsz, shuffle=False, pin_memory=True)
-    loader_val = torch.utils.data.DataLoader(logits_val, batch_size = bsz, shuffle=False, pin_memory=True)
-
-    ### Instantiate and wrap model
-    model = get_model(modelname)
-    # Conformalize the model
-    conformal_model = ConformalModelLogits(model, loader_cal, alpha=alpha, kreg=kreg, lamda=lamda_predictor, randomized=randomized, naive=naive_bool)
-
-    df = pd.DataFrame(columns=['model','predictor','size','topk','lamda'])
-    corrects = 0
-    denom = 0
-    ### Perform experiment
-    for i, (logit, target) in tqdm(enumerate(loader_val)):
-        # compute output
-        output, S = conformal_model(logit) # This is a 'dummy model' which takes logits, for efficiency.
-        # measure accuracy and record loss
-        size = np.array([x.size for x in S])
-        I, _, _ = sort_sum(logit.numpy()) 
-        topk = np.where((I - target.view(-1,1).numpy())==0)[1]+1 
-        batch_df = pd.DataFrame({'model': modelname, 'predictor': predictor, 'size': size, 'topk': topk, 'lamda': lamda})
-        df = df.append(batch_df, ignore_index=True)
-
-        corrects += sum(topk <= size)
-        denom += output.shape[0] 
-
-    print(f"Empirical coverage: {corrects/denom} with lambda: {lamda}")
-    return df
-
-def _fix_randomness(seed=0):
+if __name__ == "__main__":
+    ### Fix randomness 
+    seed = 0
     np.random.seed(seed=seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     random.seed(seed)
+    cache_fname = "./.cache/imagenet_v2_df.csv"
+    alpha_table = 0.05
+    try:
+        df = pd.read_csv(cache_fname)
+    except:
+        ### Configure experiment
+        # InceptionV3 can take a long time to load, depending on your version of scipy (see https://github.com/pytorch/vision/issues/1797). 
+        modelnames = ['ResNeXt101','ResNet152','ResNet101','ResNet50','ResNet18','DenseNet161','VGG16','Inception','ShuffleNet']
+        alphas = [0.05, 0.10]
+        predictors = ['Fixed','Naive', 'APS', 'RAPS']
+        params = list(itertools.product(modelnames, alphas, predictors))
+        m = len(params)
+        datasetname = 'ImagenetV2'
+        datasetpath = './data/imagenetv2-matched-frequency/'
+        num_trials = 100 
+        kreg = None 
+        lamda = None 
+        randomized = True
+        n_data_conf = 5000 
+        n_data_val = 5000 
+        pct_paramtune = 0.33
+        bsz = 32 
+        cudnn.benchmark = True
 
-if __name__ == "__main__":
-    ### Configure experiment
-    modelnames = ['ResNet152']
-    alphas = [0.1]
-    predictors = ['RAPS']
-    lamdas = [0, 0.001, 0.01, 0.05, 0.1, 0.2, 1] 
-    params = list(itertools.product(modelnames, alphas, predictors, lamdas))
-    m = len(params)
-    datasetname = 'Imagenet'
-    datasetpath = '/scratch/group/ilsvrc/val/'
-    kreg = 5 
-    randomized = True
-    n_data_conf = 20000
-    n_data_val = 20000
-    bsz = 64
-    cudnn.benchmark = True
+        ### Perform the experiment
+        df = pd.DataFrame(columns = ["Model","Predictor","Top1","Top5","alpha","Coverage","Size"])
+        for i in range(m):
+            modelname, alpha, predictor = params[i]
+            print(f'Model: {modelname} | Desired coverage: {1-alpha} | Predictor: {predictor}')
 
-    ### Perform the experiment
-    df = pd.DataFrame(columns = ["model","predictor","size","topk","lamda"])
-    for i in range(m):
-        modelname, alpha, predictor, lamda = params[i]
-        print(f'Model: {modelname} | Desired coverage: {1-alpha} | Predictor: {predictor} | Lambda = {lamda}')
-        out = sizes_topk(modelname, datasetname, datasetpath, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, predictor)
-        df = df.append(out, ignore_index=True) 
-
-    tbl = difficulty_table(df)
-    print(tbl)
-    
-    table = open("./outputs/difficulty_table.tex", 'w')
-    table.write(tbl)
+            out = experiment(modelname, datasetname, datasetpath, num_trials, params[i][1], kreg, lamda, randomized, n_data_conf, n_data_val, pct_paramtune, bsz, predictor) 
+            df = df.append({"Model": modelname,
+                            "Predictor": predictor,
+                            "Top1": np.round(out[0],3),
+                            "Top5": np.round(out[1],3),
+                            "alpha": alpha,
+                            "Coverage": np.round(out[2],3),
+                            "Size": 
+                            np.round(out[3],3)}, ignore_index=True) 
+        df.to_csv(cache_fname)
+    ### Print the TeX table
+    table_str = make_table(df, alpha_table)
+    table = open(f"outputs/imagenetv2results_{alpha_table}".replace('.','_') + ".tex", 'w')
+    table.write(table_str)
     table.close()

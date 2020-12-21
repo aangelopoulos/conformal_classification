@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from scipy.special import softmax
 import torch
-import torch.utils.data as tdata
 import torchvision
 import torchvision.transforms as tf
 import random
@@ -18,76 +17,105 @@ import pandas as pd
 import seaborn as sns
 import pdb
 
-def make_table(df):
-    round_to_n = lambda x, n: np.round(x, -int(np.floor(np.log10(x))) + (n - 1)) # Rounds to sig figs
-    table = ""
-    table += "\\begin{table}[t]\n"
-    table += "\\centering\n"
-    table += "\\small\n"
-    table += "\\begin{tabular}{lcccc}\n"
-    table += "\\toprule \n"
-    table += " & \\multicolumn{2}{c}{Violation at $\\alpha=10\\%$}  & \\multicolumn{2}{c}{Violation at $\\alpha=5\\%$} \\\\ \n"
-    table += "\\cmidrule(r){2-3}  \\cmidrule(r){4-5} \n"
-    table += "Model & APS & RAPS & APS & RAPS \\\\ \n"
-    table += "\\midrule \n"
+# Plotting code
+def difficulty_table(df_big):
 
-    for model in df.Model.unique():
-        dfmodel = df[df.Model == model]
-        table += model + " & "
-        table += str(np.round(dfmodel[dfmodel.alpha == 0.1]["APS violation"].item(),3)) + " & "
-        table += "\\bf " + str(np.round(dfmodel[dfmodel.alpha == 0.1]["RAPS violation"].item(),3)) + " & "
-        table += str(np.round(dfmodel[dfmodel.alpha == 0.05]["APS violation"].item(),3)) + " & "
-        table += "\\bf " + str(np.round(dfmodel[dfmodel.alpha == 0.05]["RAPS violation"].item(),3)) + " " 
-        table += "\\\\ \n"
+    topks = [[1,1],[2,3],[4,6],[7,10],[11,100],[101,1000]]
+
+    tbl = ""
+    tbl += "\\begin{table}[t]\n"
+    tbl += "\\centering\n"
+    tbl += "\\tiny\n"
+    tbl += "\\begin{tabular}{lc"
+
+    lamdaunique = df_big.lamda.unique()
+
+    multicol_line = "       & " 
+    midrule_line = "        "
+    label_line = "difficulty & count "
+
+    for i in range(len(lamdaunique)):
+        j = 2*i 
+        tbl += "cc"
+        multicol_line += (" & \multicolumn{2}{c}{$\lambda={" + str(lamdaunique[i]) + "}$}    ")
+        midrule_line += (" \cmidrule(r){" + str(j+1+2) + "-" + str(j+2+2) + "}    ")
+        label_line += "& cvg & sz    "
+
+    tbl += "} \n"
+    tbl += "\\toprule\n"
+    multicol_line += "\\\\ \n"
+    midrule_line += "\n"
+    label_line += "\\\\ \n"
     
-    table += "\\bottomrule \n"
-    table += "\\end{tabular} \n"
-    table += "\\caption{\\textbf{Adaptiveness results after automatically tuning $\\lambda$.} We report the median worst-stratum coverage violations of \\aps\\ and \\raps\\ over 10 trials. See Appendix~\\ref{app:optimizing-adaptiveness} for experimental details.} \n"
-    table += "\\label{table:tunelambda} \n"
-    table += "\\end{table} \n"
-    return table    
+    tbl = tbl + multicol_line + midrule_line + label_line
+    tbl += "\\midrule \n"
+    for topk in topks:
+        if topk[0] == topk[1]:
+            tbl += str(topk[0]) + "     "
+        else:
+            tbl += str(topk[0]) + " to " + str(topk[1]) + "     "
+        df = df_big[(df_big.topk >= topk[0]) & (df_big.topk <= topk[1])]
+
+        tbl += f" & {int(len(df)/len(lamdaunique))} "
+        for lamda in lamdaunique:
+            df_small = df[df.lamda == lamda]
+            cvg = len(df_small[df_small.topk <= df_small['size']])/len(df_small)
+            sz = df_small['size'].mean()
+            tbl +=  f" & {cvg:.2f} & {sz:.1f}  "
+
+        tbl += "\\\\ \n"
+    tbl += "\\bottomrule\n"
+    tbl += "\\end{tabular}\n"
+    tbl += "\\caption{\\textbf{Coverage and size conditional on difficulty.} We report coverage and size of \\raps\ sets for ResNet-152 for $k_{reg}=5$ and varying $\lambda$.}\n"
+    tbl += "\\label{table:difficulty}\n"
+    tbl += "\\end{table}\n"
+
+    return tbl
 
 # Returns a dataframe with:
 # 1) Set sizes for all test-time examples.
 # 2) topk for each example, where topk means which score was correct.
-def get_worst_violation(modelname, datasetname, datasetpath, alpha, strata, randomized, n_data_conf, n_data_val, pct_paramtune, bsz):
-    ### Data Loading
-    logits = get_logits_dataset(modelname, datasetname, datasetpath)
-    calib_logits, val_logits = tdata.random_split(logits, [n_data_conf, len(logits)-n_data_conf]) # A new random split for every trial
-    # Prepare the loaders
-    calib_loader = torch.utils.data.DataLoader(calib_logits, batch_size = bsz, shuffle=False, pin_memory=True)
-    val_loader = torch.utils.data.DataLoader(val_logits, batch_size = bsz, shuffle=False, pin_memory=True)
-
-    ### Instantiate and wrap model
-    model = get_model(modelname)
-    # Conformalize the model with the APS parameter choice
-    conformal_model = ConformalModelLogits(model, calib_loader, alpha=alpha, kreg=0, lamda=0, randomized=randomized, naive=False)
-    aps_worst_violation = get_violation(conformal_model, val_loader, strata, alpha)
-    # Conformalize the model with an optimal parameter choice
-    conformal_model = ConformalModelLogits(model, calib_loader, alpha=alpha, kreg=None, lamda=None, randomized=randomized, naive=False, pct_paramtune=pct_paramtune, lamda_criterion='adaptiveness')
-    raps_worst_violation = get_violation(conformal_model, val_loader, strata, alpha)
-
-    return aps_worst_violation, raps_worst_violation 
-
-def experiment(modelname, datasetname, datasetpath, num_trials, alpha, strata, randomized, n_data_conf, n_data_val, pct_paramtune, bsz):
+def sizes_topk(modelname, datasetname, datasetpath, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, predictor):
     _fix_randomness()
+    ### Experiment logic
+    naive_bool = predictor == 'Naive'
+    lamda_predictor = lamda
+    if predictor in ['Naive', 'APS']:
+        lamda_predictor = 0 # No regularization.
+
     ### Data Loading
     logits = get_logits_dataset(modelname, datasetname, datasetpath)
+    logits_cal, logits_val = split2(logits, n_data_conf, n_data_val) # A new random split for every trial
+    # Prepare the loaders
+    loader_cal = torch.utils.data.DataLoader(logits_cal, batch_size = bsz, shuffle=False, pin_memory=True)
+    loader_val = torch.utils.data.DataLoader(logits_val, batch_size = bsz, shuffle=False, pin_memory=True)
 
     ### Instantiate and wrap model
     model = get_model(modelname)
+    # Conformalize the model
+    conformal_model = ConformalModelLogits(model, loader_cal, alpha=alpha, kreg=kreg, lamda=lamda_predictor, randomized=randomized, naive=naive_bool)
 
+    df = pd.DataFrame(columns=['model','predictor','size','topk','lamda'])
+    corrects = 0
+    denom = 0
     ### Perform experiment
-    aps_violations = np.zeros((num_trials,))
-    raps_violations = np.zeros((num_trials,))
-    for i in tqdm(range(num_trials)):
-        aps_violations[i], raps_violations[i] = get_worst_violation(modelname, datasetname, datasetpath, alpha, strata, randomized, n_data_conf, n_data_val, pct_paramtune, bsz)
-        print(f'\n\tAPS Violation: {np.median(aps_violations[0:i+1]):.3f}, RAPS Violation: {np.median(raps_violations[0:i+1]):.3f}\033[F', end='')
-    print('')
-    return np.median(aps_violations), np.median(raps_violations)
+    for i, (logit, target) in tqdm(enumerate(loader_val)):
+        # compute output
+        output, S = conformal_model(logit) # This is a 'dummy model' which takes logits, for efficiency.
+        # measure accuracy and record loss
+        size = np.array([x.size for x in S])
+        I, _, _ = sort_sum(logit.numpy()) 
+        topk = np.where((I - target.view(-1,1).numpy())==0)[1]+1 
+        batch_df = pd.DataFrame({'model': modelname, 'predictor': predictor, 'size': size, 'topk': topk, 'lamda': lamda})
+        df = df.append(batch_df, ignore_index=True)
+
+        corrects += sum(topk <= size)
+        denom += output.shape[0] 
+
+    print(f"Empirical coverage: {corrects/denom} with lambda: {lamda}")
+    return df
 
 def _fix_randomness(seed=0):
-    ### Fix randomness 
     np.random.seed(seed=seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
@@ -95,39 +123,32 @@ def _fix_randomness(seed=0):
 
 if __name__ == "__main__":
     ### Configure experiment
-    modelnames = ['ResNeXt101','ResNet152','ResNet101','ResNet50','ResNet18','DenseNet161','VGG16','Inception','ShuffleNet']
-    alphas = [0.05, 0.10]
+    modelnames = ['ResNet152']
+    alphas = [0.1]
+    predictors = ['RAPS']
+    lamdas = [0, 0.001, 0.01, 0.05, 0.1, 0.2, 1] 
+    params = list(itertools.product(modelnames, alphas, predictors, lamdas))
+    m = len(params)
     datasetname = 'Imagenet'
     datasetpath = '/scratch/group/ilsvrc/val/'
-    params = list(itertools.product(modelnames, alphas))
-    m = len(params)
+    kreg = 5 
     randomized = True
-    num_trials = 10
-    n_data_conf = 30000
+    n_data_conf = 20000
     n_data_val = 20000
-    pct_paramtune = 0.33
     bsz = 64
     cudnn.benchmark = True
-    cache_fname = "./.cache/tune_lambda_df.csv"
 
-    strata = [[0,1],[2,3],[4,6],[7,10],[11,100],[101,1000]]
-    try:
-        df = pd.read_csv(cache_fname)
-    except:
-        df = pd.DataFrame(columns=['Model','alpha','APS violation','RAPS violation'])
-        for i in range(m):
-            modelname, alpha = params[i]
-            print(f'Model: {modelname} | Desired coverage: {1-alpha}')
+    ### Perform the experiment
+    df = pd.DataFrame(columns = ["model","predictor","size","topk","lamda"])
+    for i in range(m):
+        modelname, alpha, predictor, lamda = params[i]
+        print(f'Model: {modelname} | Desired coverage: {1-alpha} | Predictor: {predictor} | Lambda = {lamda}')
+        out = sizes_topk(modelname, datasetname, datasetpath, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, predictor)
+        df = df.append(out, ignore_index=True) 
 
-            APS_violation_median, RAPS_violation_median = experiment(modelname, datasetname, datasetpath, num_trials, alpha, strata, randomized, n_data_conf, n_data_val, pct_paramtune, bsz) 
-            df = df.append({"Model": modelname,
-                            "alpha": alpha,
-                            "APS violation": APS_violation_median,
-                            "RAPS violation": RAPS_violation_median}, ignore_index=True) 
-        df.to_csv(cache_fname)
-
-    table_str = make_table(df)
-    table = open("outputs/tunelambda.tex", 'w')
-    table.write(table_str)
+    tbl = difficulty_table(df)
+    print(tbl)
+    
+    table = open("./outputs/difficulty_table.tex", 'w')
+    table.write(tbl)
     table.close()
-    #aps_worst_violation, raps_worst_violation = get_worst_violation(modelname, datasetname, datasetpath, alpha, strata, randomized, n_data_conf, n_data_val, bsz) 

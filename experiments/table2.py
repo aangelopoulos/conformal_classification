@@ -71,7 +71,7 @@ if __name__ == "__main__":
         m = len(params)
         datasetname = 'ImagenetV2'
         datasetpath = './data/imagenetv2-matched-frequency/'
-        num_trials = 1 
+        num_trials = 100
         kreg = None 
         lamda = None 
         randomized = True

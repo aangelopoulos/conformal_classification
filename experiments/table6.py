@@ -45,8 +45,8 @@ def make_table(df, alpha):
 
     table += "\\bottomrule \n"
     table += "\\end{tabular} \n"
-    table += "\\caption{\\textbf{Results on Imagenet-V2.} We report coverage and size of the optimal, randomized fixed sets, \\naive, \\aps,\ and \\raps\ sets for nine different Imagenet classifiers. The median-of-means for each column is reported over 100 different trials at the 5\% level. See Section~\\ref{subsec:imagenet-v2} for full details.} \n" 
-    table += "\\label{table:imagenet-v2-005} \n"
+    table += "\\caption{\\textbf{Results on Imagenet-Val.} We report coverage and size of the optimal, randomized fixed sets, \\naive, \\aps,\ and \\raps\ sets for nine different Imagenet classifiers. The median-of-means for each column is reported over 100 different trials at the 5\% level. See Section~\\ref{subsec:imagenet-val} for full details.} \n" 
+    table += "\\label{table:imagenet-val-005} \n"
     table += "\\end{table} \n" 
     return table
 
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     random.seed(seed)
-    cache_fname = "./.cache/imagenet_v2_df.csv"
+    cache_fname = "./.cache/imagenet_df.csv"
     alpha_table = 0.05
     try:
         df = pd.read_csv(cache_fname)
@@ -69,14 +69,14 @@ if __name__ == "__main__":
         predictors = ['Fixed','Naive', 'APS', 'RAPS']
         params = list(itertools.product(modelnames, alphas, predictors))
         m = len(params)
-        datasetname = 'ImagenetV2'
-        datasetpath = './data/imagenetv2-matched-frequency/'
+        datasetname = 'Imagenet'
+        datasetpath = '/scratch/group/ilsvrc/val/'
         num_trials = 100 
         kreg = None 
         lamda = None 
         randomized = True
-        n_data_conf = 5000 
-        n_data_val = 5000 
+        n_data_conf = 30000
+        n_data_val = 20000
         pct_paramtune = 0.33
         bsz = 32 
         cudnn.benchmark = True
@@ -99,6 +99,6 @@ if __name__ == "__main__":
         df.to_csv(cache_fname)
     ### Print the TeX table
     table_str = make_table(df, alpha_table)
-    table = open(f"outputs/imagenetv2results_{alpha_table}".replace('.','_') + ".tex", 'w')
+    table = open(f"outputs/imagenetresults_{alpha_table}".replace('.','_') + ".tex", 'w')
     table.write(table_str)
     table.close()

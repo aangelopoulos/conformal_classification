@@ -76,33 +76,34 @@ Then create a holdout set for conformal calibration using a line like:
 
 [`calib, val = random_split(mydataset, [num_calib,total-num_calib])` ](https://github.com/aangelopoulos/conformal-classification/blob/cb2267a0fd127c27f61a7cd74f9519f6f2509e82/example.py#L38)
 
-Finally, you can choose `kreg` and `lamda` and conformalize your pretrained `model` with, e.g.,
+Finally, you can create the model 
 
-[`model = ConformalModel(model, calib_loader, alpha=0.1, kreg=5, lamda=0.01)`](https://github.com/aangelopoulos/conformal-classification/blob/cb2267a0fd127c27f61a7cd74f9519f6f2509e82/example.py#L52)
+[`model = ConformalModel(model, calib_loader, alpha=0.1, lamda_criterion='size')`](https://github.com/aangelopoulos/conformal-classification/blob/cb2267a0fd127c27f61a7cd74f9519f6f2509e82/example.py#L52)
 
 See the discussion below for picking `alpha`, `kreg`, and `lamda`.
 
 ## Reproducing Our Results
-The output of `example.py` with `seed=0` and `num_calib=2000` should be:
+The output of `example.py` should be:
 ```
+Begin Platt scaling.
 Computing logits for model (only happens once).
-100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 16/16 [00:33<00:00,  2.06s/it]
-Optimal T=1.217227816581726
+100%|███████████████████████████████████████| 79/79 [02:24<00:00,  1.83s/it]
+Optimal T=1.1976691484451294
 Model calibrated and conformalized! Now evaluate over remaining data.
-N: 48000 | Time: 2.318 (2.401) | Loss: 0.7886 (0.8778) | Cvg@1: 0.773 (0.783) | Cvg@5: 0.945 (0.940) | Cvg@RAPS: 0.922 (0.903) | Size@RAPS: 4.133 (3.955)
+N: 40000 | Time: 1.569 (2.367) | Cvg@1: 0.812 (0.782) | Cvg@5: 0.922 (0.941) | Cvg@RAPS: 0.953 (0.901) | Size@RAPS: 4.828 (6.900))
 Complete!
 ```
-The values in parentheses are running averages. The preceding values are only for the most recent batch. The timing values will be different on your system, but the rest of the numbers should be exactly the same. On some systems, the evaluation may print over many lines. 
+The values in parentheses are running averages. The preceding values are only for the most recent batch. The timing values will be different on your system, but the rest of the numbers should be exactly the same. The progress bar may print over many lines if your terminal window is small. 
 
-The expected outputs of the experiments are stored in `experiments/outputs`, and they are exactly identical to the results reported in our paper. You can reproduce the results by executing `python table1.py`, `python table2.py`, `python figure2.py`, `python figure4.py`, and `python parameter_appendix.py` after you have installed our dependencies. For Table 2, we used the `matched-frequencies` version of ImageNet-V2. 
+The expected outputs of the experiments are stored in `experiments/outputs`, and they are exactly identical to the results reported in our paper. You can reproduce the results by executing the python scripts in './experiments/' after you have installed our dependencies. For Table 2, we used the `matched-frequencies` version of ImageNet-V2. 
 
 ## Picking `alpha`, `kreg`, and `lamda`
 
 `alpha` is the maximum proportion of errors you are willing to tolerate. The target coverage is therefore `1-alpha`. A smaller `alpha` will usually lead to larger sets, since the desired coverage is more stringent.
 
-`kreg` is the first class at which the RAPS penalty is applied. `kreg` should ideally be equal to `kfixed`, where `kfixed` is the smallest fixed-size set at which your classifier achieves the coverage guarantee you want. In practice we have found it suffices for many models to pick `kreg=5`, but performance can be improved by optimizing `kreg`. The specific choice of `kreg` matters less for small values of `lamda`.
-
-`lamda` is the level of RAPS regularization. It is a nonnegative real number. Any `lamda` above 1 is equivalent. The larger `lamda` is, the more the RAPS sets truncate sets with more than `kreg` elements. We purposefully misspell lambda as `lamda` because of the conflicting Python keyword.
+We have included two optimal procedures for picking 'kreg' and 'lamda'.
+If you want sets with small size, set 'lamda_criterion=\'size\''.
+If you want sets that approximate conditional coverage, set 'lamda_criterion=\'adaptiveness\''.
 
 ## License
 <a href="https://opensource.org/licenses/MIT" alt="License">MIT License</a>
