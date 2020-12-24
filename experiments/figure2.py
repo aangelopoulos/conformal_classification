@@ -51,7 +51,7 @@ def plot_figure2(df):
     plt.tight_layout(rect=[0, 0.03, 1, 0.93])
     plt.savefig('./outputs/barplot-figure2.pdf')
 
-def trial(model, logits, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, criterion, naive_bool):
+def trial(model, logits, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, naive_bool):
     logits_cal, logits_val = split2(logits, n_data_conf, n_data_val) # A new random split for every trial
     # Prepare the loaders
     loader_cal = torch.utils.data.DataLoader(logits_cal, batch_size = bsz, shuffle=False, pin_memory=True)
@@ -59,10 +59,10 @@ def trial(model, logits, alpha, kreg, lamda, randomized, n_data_conf, n_data_val
     # Conformalize the model
     conformal_model = ConformalModelLogits(model, loader_cal, alpha=alpha, kreg=kreg, lamda=lamda, randomized=randomized, naive=naive_bool)
     # Collect results
-    top1_avg, top5_avg, cvg_avg, sz_avg = validate(loader_val, conformal_model, criterion, print_bool=False)
+    top1_avg, top5_avg, cvg_avg, sz_avg = validate(loader_val, conformal_model, print_bool=False)
     return top1_avg, top5_avg, cvg_avg, sz_avg
 
-def experiment(modelname, datasetname, datasetpath, model, logits, num_trials, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, criterion, predictor):
+def experiment(modelname, datasetname, datasetpath, model, logits, num_trials, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, predictor):
     ### Experiment logic
     naive_bool = predictor == 'Naive'
     if predictor in ['Naive', 'APS']:
@@ -71,7 +71,7 @@ def experiment(modelname, datasetname, datasetpath, model, logits, num_trials, a
     ### Perform experiment
     df = pd.DataFrame(columns = ["model","predictor","alpha","coverage","size"])
     for i in tqdm(range(num_trials)):
-        top1_avg, top5_avg, cvg_avg, sz_avg = trial(model, logits, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, criterion, naive_bool)
+        top1_avg, top5_avg, cvg_avg, sz_avg = trial(model, logits, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, naive_bool)
         df = df.append({"model": modelname,
                         "predictor": predictor,
                         "alpha": alpha,
@@ -104,7 +104,6 @@ if __name__ == "__main__":
     n_data_conf = 20000
     n_data_val = 20000
     bsz = 64
-    criterion = torch.nn.CrossEntropyLoss().cuda()
     cudnn.benchmark = True
 
     ### Instantiate and wrap model
@@ -118,7 +117,7 @@ if __name__ == "__main__":
     for i in range(m):
         alpha, predictor = params[i]
         print(f'Model: {modelname} | Desired coverage: {1-alpha} | Predictor: {predictor}')
-        out = experiment(modelname, datasetname, datasetpath, model, logits, num_trials, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, criterion, predictor) 
+        out = experiment(modelname, datasetname, datasetpath, model, logits, num_trials, alpha, kreg, lamda, randomized, n_data_conf, n_data_val, bsz, predictor) 
         df = df.append(out, ignore_index=True) 
     plot_figure2(df) 
     

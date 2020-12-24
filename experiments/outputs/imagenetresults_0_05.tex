@@ -1,0 +1,23 @@
+\begin{table}[t] 
+\centering 
+\small 
+\begin{tabular}{lcccccccccc} 
+\toprule 
+ & \multicolumn{2}{c}{Accuracy}  & \multicolumn{4}{c}{Coverage} & \multicolumn{4}{c}{Size} \\ 
+\cmidrule(r){2-3}  \cmidrule(r){4-7}  \cmidrule(r){8-11} 
+Model & Top-1 & Top-5 & Top K & Naive & APS & RAPS & Top K & Naive & APS & RAPS \\ 
+\midrule 
+ ResNeXt101 &  0.793 &  0.945 & 0.95 & 0.938 & 0.95 & 0.95 & 5.63 & 36.1 & 46.5 & 4.16 \\ 
+ ResNet152 &  0.783 &  0.94 & 0.95 & 0.943 & 0.95 & 0.95 & 6.35 & 19.7 & 23.0 & 4.39 \\ 
+ ResNet101 &  0.774 &  0.935 & 0.95 & 0.944 & 0.95 & 0.95 & 6.78 & 20.8 & 23.2 & 4.75 \\ 
+ ResNet50 &  0.761 &  0.929 & 0.95 & 0.943 & 0.95 & 0.95 & 8.03 & 22.6 & 26.1 & 5.54 \\ 
+ ResNet18 &  0.698 &  0.891 & 0.95 & 0.942 & 0.95 & 0.95 & 16.0 & 28.5 & 33.1 & 11.5 \\ 
+ DenseNet161 &  0.772 &  0.936 & 0.95 & 0.942 & 0.95 & 0.95 & 6.89 & 23.5 & 27.8 & 5.06 \\ 
+ VGG16 &  0.716 &  0.904 & 0.95 & 0.943 & 0.949 & 0.95 & 12.9 & 24.6 & 27.7 & 8.7 \\ 
+ Inception &  0.695 &  0.887 & 0.95 & 0.938 & 0.95 & 0.95 & 20.1 & 142.0 & 169.0 & 18.2 \\ 
+ ShuffleNet &  0.694 &  0.883 & 0.95 & 0.94 & 0.95 & 0.95 & 19.4 & 58.7 & 71.5 & 15.5 \\ 
+\bottomrule 
+\end{tabular} 
+\caption{\textbf{Results on Imagenet-Val.} We report coverage and size of the optimal, randomized fixed sets, \naive, \aps,\ and \raps\ sets for nine different Imagenet classifiers. The median-of-means for each column is reported over 100 different trials at the 5\% level. See Section~\ref{subsec:imagenet-val} for full details.} 
+\label{table:imagenet-val-005} 
+\end{table} 

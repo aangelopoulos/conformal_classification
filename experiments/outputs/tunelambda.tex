@@ -1,0 +1,23 @@
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule 
+ & \multicolumn{2}{c}{Violation at $\alpha=10\%$}  & \multicolumn{2}{c}{Violation at $\alpha=5\%$} \\ 
+\cmidrule(r){2-3}  \cmidrule(r){4-5} 
+Model & APS & RAPS & APS & RAPS \\ 
+\midrule 
+ResNeXt101 & 0.088 & \bf 0.048 & 0.046 & \bf 0.02 \\ 
+ResNet152 & 0.07 & \bf 0.041 & 0.039 & \bf 0.02 \\ 
+ResNet101 & 0.072 & \bf 0.059 & 0.039 & \bf 0.015 \\ 
+ResNet50 & 0.07 & \bf 0.03 & 0.038 & \bf 0.017 \\ 
+ResNet18 & 0.047 & \bf 0.034 & 0.032 & \bf 0.023 \\ 
+DenseNet161 & 0.076 & \bf 0.04 & 0.039 & \bf 0.017 \\ 
+VGG16 & 0.051 & \bf 0.024 & 0.03 & \bf 0.015 \\ 
+Inception & 0.084 & \bf 0.042 & 0.043 & \bf 0.025 \\ 
+ShuffleNet & 0.059 & \bf 0.034 & 0.035 & \bf 0.02 \\ 
+\bottomrule 
+\end{tabular} 
+\caption{\textbf{Adaptiveness results after automatically tuning $\lambda$.} We report the median worst-stratum coverage violations of \aps\ and \raps\ over 10 trials. See Appendix~\ref{app:optimizing-adaptiveness} for experimental details.} 
+\label{table:tunelambda} 
+\end{table} 

@@ -41,10 +41,9 @@ class AverageMeter(object):
         fmtstr = '{name} {val' + self.fmt + '} ({avg' + self.fmt + '})'
         return fmtstr.format(**self.__dict__)
 
-def validate(val_loader, model, criterion, print_bool):
+def validate(val_loader, model, print_bool):
     with torch.no_grad():
         batch_time = AverageMeter('batch_time')
-        losses = AverageMeter('losses')
         top1 = AverageMeter('top1')
         top5 = AverageMeter('top5')
         coverage = AverageMeter('RAPS coverage')
@@ -57,13 +56,11 @@ def validate(val_loader, model, criterion, print_bool):
             target = target.cuda()
             # compute output
             output, S = model(x.cuda())
-            loss = criterion(output, target)
             # measure accuracy and record loss
             prec1, prec5 = accuracy(output, target, topk=(1, 5))
             cvg, sz = coverage_size(S, target)
 
             # Update meters
-            losses.update(loss.item(), n=x.shape[0])
             top1.update(prec1.item()/100.0, n=x.shape[0])
             top5.update(prec5.item()/100.0, n=x.shape[0])
             coverage.update(cvg, n=x.shape[0])
@@ -74,7 +71,7 @@ def validate(val_loader, model, criterion, print_bool):
             end = time.time()
             N = N + x.shape[0]
             if print_bool:
-                print(f'\rN: {N} | Time: {batch_time.val:.3f} ({batch_time.avg:.3f}) | Loss: {losses.val:.4f} ({losses.avg:.4f}) | Cvg@1: {top1.val:.3f} ({top1.avg:.3f}) | Cvg@5: {top5.val:.3f} ({top5.avg:.3f}) | Cvg@RAPS: {coverage.val:.3f} ({coverage.avg:.3f}) | Size@RAPS: {size.val:.3f} ({size.avg:.3f})', end='')
+                print(f'\rN: {N} | Time: {batch_time.val:.3f} ({batch_time.avg:.3f}) | Cvg@1: {top1.val:.3f} ({top1.avg:.3f}) | Cvg@5: {top5.val:.3f} ({top5.avg:.3f}) | Cvg@RAPS: {coverage.val:.3f} ({coverage.avg:.3f}) | Size@RAPS: {size.val:.3f} ({size.avg:.3f})', end='')
     if print_bool:
         print('') #Endline
 
