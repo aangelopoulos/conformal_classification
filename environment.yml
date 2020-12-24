@@ -1,4 +1,4 @@
-name: conformal2
+name: conformal
 channels:
   - pytorch
 dependencies:
