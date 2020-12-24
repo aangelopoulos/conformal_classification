@@ -49,7 +49,7 @@ if __name__ == "__main__":
     model.eval()
 
     # optimize for 'size' or 'adaptiveness'
-    lamda_criterion = 'adaptiveness'
+    lamda_criterion = 'size'
 
     # Conformalize model
     model = ConformalModel(model, calib_loader, alpha=0.1, lamda_criterion=lamda_criterion)
