@@ -96,8 +96,6 @@ def accuracy(output, target, topk=(1,)):
     correct = pred.eq(target.view(1, -1).expand_as(pred))
 
     res = []
-    import pdb
-    pdb.set_trace()
     for k in topk:
         correct_k = correct[:k].float().sum()
         res.append(correct_k.mul_(100.0 / batch_size))
