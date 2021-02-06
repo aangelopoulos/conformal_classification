@@ -71,7 +71,7 @@ def sizes_topk(modelname, datasetname, datasetpath, alpha, kreg, lamda, randomiz
     ### Instantiate and wrap model
     model = get_model(modelname)
     # Conformalize the model
-    conformal_model = ConformalModelLogits(model, loader_cal, alpha=alpha, kreg=kreg, lamda=lamda_predictor, randomized=randomized, naive=naive_bool)
+    conformal_model = ConformalModelLogits(model, loader_cal, alpha=alpha, kreg=kreg, lamda=lamda_predictor, randomized=randomized, allow_zero_sets=True, naive=naive_bool)
 
     df = pd.DataFrame(columns=['model','predictor','size','topk','lamda'])
     ### Perform experiment

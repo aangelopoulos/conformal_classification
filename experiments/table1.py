@@ -68,7 +68,7 @@ def trial(model, logits, alpha, kreg, lamda, randomized, n_data_conf, n_data_val
         sz_avg = sizes.mean() 
     else:
         # Conformalize the model
-        conformal_model = ConformalModelLogits(model, loader_cal, alpha=alpha, kreg=kreg, lamda=lamda, randomized=randomized, pct_paramtune=pct_paramtune, naive=naive_bool, batch_size=bsz, lamda_criterion='size')
+        conformal_model = ConformalModelLogits(model, loader_cal, alpha=alpha, kreg=kreg, lamda=lamda, randomized=randomized, allow_zero_sets=True, pct_paramtune=pct_paramtune, naive=naive_bool, batch_size=bsz, lamda_criterion='size')
         # Collect results
         top1_avg, top5_avg, cvg_avg, sz_avg = validate(loader_val, conformal_model, print_bool=False)
     return top1_avg, top5_avg, cvg_avg, sz_avg

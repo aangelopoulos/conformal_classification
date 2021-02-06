@@ -90,7 +90,7 @@ Computing logits for model (only happens once).
 100%|███████████████████████████████████████| 79/79 [02:24<00:00,  1.83s/it]
 Optimal T=1.1976691484451294
 Model calibrated and conformalized! Now evaluate over remaining data.
-N: 40000 | Time: 1.569 (2.367) | Cvg@1: 0.812 (0.782) | Cvg@5: 0.922 (0.941) | Cvg@RAPS: 0.953 (0.901) | Size@RAPS: 4.828 (6.900))
+N: 40000 | Time: 1.686 (2.396) | Cvg@1: 0.766 (0.782) | Cvg@5: 0.969 (0.941) | Cvg@RAPS: 0.891 (0.914) | Size@RAPS: 2.953 (2.982)
 Complete!
 ```
 The values in parentheses are running averages. The preceding values are only for the most recent batch. The timing values will be different on your system, but the rest of the numbers should be exactly the same. The progress bar may print over many lines if your terminal window is small. 

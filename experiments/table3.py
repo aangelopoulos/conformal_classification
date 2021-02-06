@@ -21,7 +21,7 @@ def trial(model, logits, alpha, kreg, lamda, randomized, n_data_conf, n_data_val
     loader_cal = torch.utils.data.DataLoader(logits_cal, batch_size = bsz, shuffle=False, pin_memory=True)
     loader_val = torch.utils.data.DataLoader(logits_val, batch_size = bsz, shuffle=False, pin_memory=True)
     # Conformalize the model
-    conformal_model = ConformalModelLogits(model, loader_cal, alpha=alpha, kreg=kreg, lamda=lamda, randomized=randomized, naive=naive_bool)
+    conformal_model = ConformalModelLogits(model, loader_cal, alpha=alpha, kreg=kreg, lamda=lamda, randomized=randomized, allow_zero_sets=True, naive=naive_bool)
     # Collect results
     top1_avg, top5_avg, cvg_avg, sz_avg = validate(loader_val, conformal_model, print_bool=False)
     return top1_avg, top5_avg, cvg_avg, sz_avg

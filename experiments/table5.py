@@ -61,10 +61,10 @@ def get_worst_violation(modelname, datasetname, datasetpath, alpha, strata, rand
     ### Instantiate and wrap model
     model = get_model(modelname)
     # Conformalize the model with the APS parameter choice
-    conformal_model = ConformalModelLogits(model, calib_loader, alpha=alpha, kreg=0, lamda=0, randomized=randomized, naive=False)
+    conformal_model = ConformalModelLogits(model, calib_loader, alpha=alpha, kreg=0, lamda=0, randomized=randomized, allow_zero_sets=True, naive=False)
     aps_worst_violation = get_violation(conformal_model, val_loader, strata, alpha)
     # Conformalize the model with an optimal parameter choice
-    conformal_model = ConformalModelLogits(model, calib_loader, alpha=alpha, kreg=None, lamda=None, randomized=randomized, naive=False, pct_paramtune=pct_paramtune, lamda_criterion='adaptiveness')
+    conformal_model = ConformalModelLogits(model, calib_loader, alpha=alpha, kreg=None, lamda=None, randomized=randomized, allow_zero_sets=True, naive=False, pct_paramtune=pct_paramtune, lamda_criterion='adaptiveness')
     raps_worst_violation = get_violation(conformal_model, val_loader, strata, alpha)
 
     return aps_worst_violation, raps_worst_violation 
