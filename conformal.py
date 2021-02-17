@@ -91,21 +91,29 @@ def platt(cmodel, calib_loader, max_iters=10, lr=0.01, epsilon=0.01):
 ### Precomputed-logit versions of the above functions.
 
 class ConformalModelLogits(nn.Module):
-    def __init__(self, model, calib_loader, alpha, kreg=None, lamda=None, randomized=True, allow_zero_sets=False, naive=False, pct_paramtune = 0.3, batch_size=32, lamda_criterion='size'):
+    def __init__(self, model, calib_loader, alpha, kreg=None, lamda=None, randomized=True, allow_zero_sets=False, naive=False, LAC=False, pct_paramtune = 0.3, batch_size=32, lamda_criterion='size'):
         super(ConformalModelLogits, self).__init__()
         self.model = model 
         self.alpha = alpha
-        self.randomized=randomized
-        self.allow_zero_sets=allow_zero_sets
+        self.randomized = randomized
+        self.LAC = LAC
+        self.allow_zero_sets = allow_zero_sets
         self.T = platt_logits(self, calib_loader)
 
-        if (kreg == None or lamda == None) and not naive:
+        if (kreg == None or lamda == None) and not naive and not LAC:
             kreg, lamda, calib_logits = pick_parameters(model, calib_loader.dataset, alpha, kreg, lamda, randomized, allow_zero_sets, pct_paramtune, batch_size, lamda_criterion)
             calib_loader = tdata.DataLoader(calib_logits, batch_size=batch_size, shuffle=False, pin_memory=True)
 
         self.penalties = np.zeros((1, calib_loader.dataset[0][0].shape[0]))
-        self.penalties[:, kreg:] += lamda
-        self.Qhat = 1-alpha if naive else conformal_calibration_logits(self, calib_loader)
+        if not (kreg == None) and not naive and not LAC:
+            self.penalties[:, kreg:] += lamda
+        self.Qhat = 1-alpha
+        if not naive and not LAC:
+            self.Qhat = conformal_calibration_logits(self, calib_loader)
+        elif not naive and LAC:
+            gt_locs_cal = np.array([np.where(np.argsort(x[0]).flip(dims=(0,)) == x[1])[0][0] for x in calib_loader.dataset])
+            scores_cal = np.array([np.sort(torch.softmax(calib_loader.dataset[i][0]/self.T.item(), dim=0))[::-1][gt_locs_cal[i]] for i in range(len(calib_loader.dataset))]) 
+            self.Qhat = np.quantile( scores_cal ,alpha )
 
     def forward(self, logits, randomized=None, allow_zero_sets=None):
         if randomized == None:
@@ -117,9 +125,12 @@ class ConformalModelLogits(nn.Module):
             logits_numpy = logits.detach().cpu().numpy()
             scores = softmax(logits_numpy/self.T.item(), axis=1)
 
-            I, ordered, cumsum = sort_sum(scores)
+            if not self.LAC:
+                I, ordered, cumsum = sort_sum(scores)
 
-            S = gcq(scores, self.Qhat, I=I, ordered=ordered, cumsum=cumsum, penalties=self.penalties, randomized=randomized, allow_zero_sets=allow_zero_sets)
+                S = gcq(scores, self.Qhat, I=I, ordered=ordered, cumsum=cumsum, penalties=self.penalties, randomized=randomized, allow_zero_sets=allow_zero_sets)
+            else:
+                S = [ np.where( scores[i,:] > self.Qhat )[0] for i in range(scores.shape[0]) ]
 
         return logits, S
 
@@ -284,8 +295,7 @@ def get_violation(cmodel, loader_paramtune, strata, alpha):
     for stratum in strata:
         temp_df = df[ (df['size'] >= stratum[0]) & (df['size'] <= stratum[1]) ]
         if len(temp_df) == 0:
-            wc_violation = 1
-            break
+            continue
         stratum_violation = abs(temp_df.correct.mean()-(1-alpha))
         wc_violation = max(wc_violation, stratum_violation)
     return wc_violation # the violation
