@@ -112,8 +112,8 @@ class ConformalModelLogits(nn.Module):
             self.Qhat = conformal_calibration_logits(self, calib_loader)
         elif not naive and LAC:
             gt_locs_cal = np.array([np.where(np.argsort(x[0]).flip(dims=(0,)) == x[1])[0][0] for x in calib_loader.dataset])
-            scores_cal = np.array([np.sort(torch.softmax(calib_loader.dataset[i][0]/self.T.item(), dim=0))[::-1][gt_locs_cal[i]] for i in range(len(calib_loader.dataset))]) 
-            self.Qhat = np.quantile( scores_cal ,alpha )
+            scores_cal = 1-np.array([np.sort(torch.softmax(calib_loader.dataset[i][0]/self.T.item(), dim=0))[::-1][gt_locs_cal[i]] for i in range(len(calib_loader.dataset))]) 
+            self.Qhat = np.quantile( scores_cal , np.ceil((scores_cal.shape[0]+1) * (1-alpha)) / scores_cal.shape[0] )
 
     def forward(self, logits, randomized=None, allow_zero_sets=None):
         if randomized == None:
@@ -130,7 +130,7 @@ class ConformalModelLogits(nn.Module):
 
                 S = gcq(scores, self.Qhat, I=I, ordered=ordered, cumsum=cumsum, penalties=self.penalties, randomized=randomized, allow_zero_sets=allow_zero_sets)
             else:
-                S = [ np.where( scores[i,:] > self.Qhat )[0] for i in range(scores.shape[0]) ]
+                S = [ np.where( (1-scores[i,:]) < self.Qhat )[0] for i in range(scores.shape[0]) ]
 
         return logits, S
 

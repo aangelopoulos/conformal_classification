@@ -27,7 +27,7 @@ def make_table(df, alpha):
     table += "\\toprule \n"
     table += " & \multicolumn{2}{c}{Accuracy}  & \multicolumn{5}{c}{Coverage} & \multicolumn{5}{c}{Size} \\\\ \n"
     table += "\cmidrule(r){2-3}  \cmidrule(r){4-8}  \cmidrule(r){9-13} \n"
-    table += "Model & Top-1 & Top-5 & Top K & Naive & APS & RAPS & Lei/Wasserman & Top K & Naive & APS & RAPS & Lei/Wasserman \\\\ \n"
+    table += "Model & Top-1 & Top-5 & Top K & Naive & APS & RAPS & LAC & Top K & Naive & APS & RAPS & LAC \\\\ \n"
     table += "\\midrule \n"
     for model in df.Model.unique():
         df_model = df[df.Model == model]
@@ -38,16 +38,16 @@ def make_table(df, alpha):
         table += str(  round_to_n(df_model.Coverage[df_model.Predictor == "Naive"].item(), 3)  ) + " & "
         table += str(  round_to_n(df_model.Coverage[df_model.Predictor == "APS"].item(), 3)    ) + " & "
         table += str(  round_to_n(df_model.Coverage[df_model.Predictor == "RAPS"].item(), 3)   ) + " & "
-        table += "\b " + str(  round_to_n(df_model.Coverage[df_model.Predictor == "Lei/Wasserman"].item(), 3)   ) + " & "
+        table += str(  round_to_n(df_model.Coverage[df_model.Predictor == "LAC"].item(), 3)   ) + " & "
         table += str(  round_to_n(df_model["Size"][df_model.Predictor == "Fixed"].item(), 3)   ) + " & "
         table += str(  round_to_n(df_model["Size"][df_model.Predictor == "Naive"].item(), 3)   ) + " & "
         table += str(  round_to_n(df_model["Size"][df_model.Predictor == "APS"].item(), 3)   ) + " & "
-        table += str(  round_to_n(df_model["Size"][df_model.Predictor == "RAPS"].item(), 3)   ) + " \\\\ \n"
-        table += "\b " + str(  round_to_n(df_model["Size"][df_model.Predictor == "Lei/Wasserman"].item(), 3)   ) + " \\\\ \n"
+        table += str(  round_to_n(df_model["Size"][df_model.Predictor == "RAPS"].item(), 3)   ) + " & " 
+        table += str(  round_to_n(df_model["Size"][df_model.Predictor == "LAC"].item(), 3)   ) + " \\\\ \n"
 
     table += "\\bottomrule \n"
     table += "\\end{tabular} \n"
-    table += "\\caption{\\textbf{Results on Imagenet-Val.} We report coverage and size of the optimal, randomized fixed sets, \\naive, \\aps,\ \\raps\ , and the sets from Lei and Wasserman for nine different Imagenet classifiers. The median-of-means for each column is reported over 100 different trials at the 10\% level. See Section~\\ref{subsec:imagenet-val} for full details.} \n" 
+    table += "\\caption{\\textbf{Results on Imagenet-Val.} We report coverage and size of the optimal, randomized fixed sets, \\naive, \\aps,\ \\raps\ , and the LAC sets or nine different Imagenet classifiers. The median-of-means for each column is reported over 100 different trials at the 10\% level. See Section~\\ref{subsec:imagenet-val} for full details.} \n" 
     table += "\\label{table:imagenet-val-lei-wasserman} \n"
     table += "\\end{table} \n" 
     return table
@@ -61,13 +61,13 @@ def trial(logits, alpha, n_data_conf, n_data_val, bsz):
     loader_cal = torch.utils.data.DataLoader(logits_cal, batch_size = bsz, shuffle=False, pin_memory=True)
     conformal_model = ConformalModelLogits(None, loader_cal, alpha=alpha, naive=True, batch_size=bsz)
     T = conformal_model.T.item()
-    scores_cal = np.array([np.sort(torch.softmax(logits_cal[i][0]/T, dim=0))[::-1][gt_locs_cal[i]] for i in range(len(logits_cal))]) 
-    scores_val = np.array([np.sort(torch.softmax(logits_val[i][0]/T, dim=0))[::-1][gt_locs_val[i]] for i in range(len(logits_val))]) 
-    q = np.quantile(scores_cal, alpha)
+    scores_cal = 1-np.array([np.sort(torch.softmax(logits_cal[i][0]/T, dim=0))[::-1][gt_locs_cal[i]] for i in range(len(logits_cal))]) 
+    scores_val = 1-np.array([np.sort(torch.softmax(logits_val[i][0]/T, dim=0))[::-1][gt_locs_val[i]] for i in range(len(logits_val))]) 
+    q = np.quantile(scores_cal, np.ceil((n_data_conf+1) * (1-alpha))/n_data_conf)
     top1_avg = (gt_locs_val == 0).mean()
     top5_avg = (gt_locs_val < 5).mean()
-    cvg_avg = (scores_val > q).mean()
-    sz_avg = np.array([ (torch.softmax(logits_val[i][0]/T, dim=0) > q).sum() for i in range(len(logits_val)) ]).mean()
+    cvg_avg = ( scores_val < q).mean()
+    sz_avg = np.array([ ( (1-torch.softmax(logits_val[i][0]/T, dim=0)) < q).sum() for i in range(len(logits_val)) ]).mean()
 
     return top1_avg, top5_avg, cvg_avg, sz_avg
 
@@ -127,11 +127,11 @@ if __name__ == "__main__":
         df_lw = pd.DataFrame(columns = ["Model","Predictor","Top1","Top5","alpha","Coverage","Size"])
         for i in range(m):
             modelname, alpha = params[i]
-            print(f'Model: {modelname} | Desired coverage: {1-alpha} | Predictor: Lei/Wasserman')
+            print(f'Model: {modelname} | Desired coverage: {1-alpha} | Predictor: LAC')
 
             out = experiment(modelname, datasetname, datasetpath, num_trials, alpha, n_data_conf, n_data_val, bsz) 
             df_lw = df_lw.append({"Model": modelname,
-                                    "Predictor": "Lei/Wasserman",
+                                    "Predictor": "LAC",
                                     "Top1": np.round(out[0],3),
                                     "Top5": np.round(out[1],3),
                                     "alpha": alpha,

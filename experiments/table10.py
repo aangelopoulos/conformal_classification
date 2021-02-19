@@ -44,7 +44,7 @@ def difficulty_table(df_big):
         tbl += "\\\\ \n"
     tbl += "\\bottomrule\n"
     tbl += "\\end{tabular}\n"
-    tbl += "\\caption{\\textbf{Coverage and size conditional on difficulty.} We report coverage and size of the Lei/Wasserman sets for ResNet-152.}\n"
+    tbl += "\\caption{\\textbf{Coverage and size conditional on difficulty.} We report coverage and size of the LAC sets for ResNet-152.}\n"
     tbl += "\\label{table:lei-wasserman-difficulty}\n"
     tbl += "\\end{table}\n"
 
@@ -109,7 +109,7 @@ if __name__ == "__main__":
     df = pd.DataFrame(columns = ["model","size","topk"])
     for i in range(m):
         modelname, alpha = params[i]
-        print(f'Model: {modelname} | Desired coverage: {1-alpha} | Predictor: Lei/Wasserman')
+        print(f'Model: {modelname} | Desired coverage: {1-alpha} | Predictor: LAC')
         out = sizes_topk(modelname, datasetname, datasetpath, alpha, n_data_conf, n_data_val, bsz)
         df = df.append(out, ignore_index=True) 
 
