@@ -51,10 +51,12 @@ if __name__ == "__main__":
     # optimize for 'size' or 'adaptiveness'
     lamda_criterion = 'size'
     # allow sets of size zero
-    allow_zero_sets = False 
+    allow_zero_sets = True 
+    # use the randomized version of conformal
+    randomized = True
 
     # Conformalize model
-    model = ConformalModel(model, calib_loader, alpha=0.1, lamda_criterion=lamda_criterion, allow_zero_sets=allow_zero_sets)
+    model = ConformalModel(model, calib_loader, alpha=0.1, lamda=0, kreg=0, randomized=randomized, allow_zero_sets=allow_zero_sets)
 
     print("Model calibrated and conformalized! Now evaluate over remaining data.")
     validate(val_loader, model, print_bool=True)
