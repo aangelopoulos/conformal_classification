@@ -80,7 +80,11 @@ Finally, you can create the model
 
 [`model = ConformalModel(model, calib_loader, alpha=0.1, lamda_criterion='size')`](https://github.com/aangelopoulos/conformal-classification/blob/cb2267a0fd127c27f61a7cd74f9519f6f2509e82/example.py#L52)
 
-See the discussion below for picking `alpha`, `kreg`, and `lamda`.
+The `ConformalModel` object takes a boolean flag `randomized`. When `randomized=True`, at test-time, the sets will not be randomized.  This will lead to conservative coverage, but deterministic behavior.
+
+The `ConformalModel` object takes a second boolean flag `allow_zero_sets`. When `allow_zero_sets=True`, at test-time, sets of size zero are disallowed.  This will lead to conservative coverage, but no zero-size sets.
+
+See the discussion below for picking `alpha`, `kreg`, and `lamda` manually.
 
 ## Reproducing Our Results
 The output of `example.py` should be:

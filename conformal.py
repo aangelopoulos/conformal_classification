@@ -62,7 +62,7 @@ def conformal_calibration(cmodel, calib_loader):
 
             I, ordered, cumsum = sort_sum(scores)
 
-            E = np.concatenate((E,giq(scores,targets,I=I,ordered=ordered,cumsum=cumsum,penalties=cmodel.penalties,randomized=cmodel.randomized)))
+            E = np.concatenate((E,giq(scores,targets,I=I,ordered=ordered,cumsum=cumsum,penalties=cmodel.penalties,randomized=True, allow_zero_sets=True)))
             
         Qhat = np.quantile(E,1-cmodel.alpha,interpolation='higher')
 
@@ -144,7 +144,7 @@ def conformal_calibration_logits(cmodel, calib_loader):
 
             I, ordered, cumsum = sort_sum(scores)
 
-            E = np.concatenate((E,giq(scores,targets,I=I,ordered=ordered,cumsum=cumsum,penalties=cmodel.penalties,randomized=cmodel.randomized,allow_zero_sets=cmodel.allow_zero_sets)))
+            E = np.concatenate((E,giq(scores,targets,I=I,ordered=ordered,cumsum=cumsum,penalties=cmodel.penalties,randomized=True,allow_zero_sets=True)))
             
         Qhat = np.quantile(E,1-cmodel.alpha,interpolation='higher')
 
@@ -208,13 +208,13 @@ def get_tau(score, target, I, ordered, cumsum, penalty, randomized, allow_zero_s
     tau_nonrandom = cumsum[idx]
 
     if not randomized:
-        return tau_nonrandom
+        return tau_nonrandom + penalty[0]
     
     U = np.random.random()
 
     if idx == (0,0):
         if not allow_zero_sets:
-            return tau_nonrandom
+            return tau_nonrandom + penalty[0]
         else:
             return U * tau_nonrandom + penalty[0] 
     else:
