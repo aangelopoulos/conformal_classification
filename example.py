@@ -53,7 +53,7 @@ if __name__ == "__main__":
     # allow sets of size zero
     allow_zero_sets = True 
     # use the randomized version of conformal
-    randomized = True
+    randomized = True 
 
     # Conformalize model
     model = ConformalModel(model, calib_loader, alpha=0.1, lamda=0, kreg=0, randomized=randomized, allow_zero_sets=allow_zero_sets)
