@@ -14,7 +14,7 @@ import pdb
 # Save it to a file in .cache/modelname
 # The only difference is that the forward method of ConformalModel also outputs a set.
 class ConformalModel(nn.Module):
-    def __init__(self, model, calib_loader, alpha, kreg=None, lamda=None, randomized=True, allow_zero_sets=True, pct_paramtune = 0.3, batch_size=32, lamda_criterion='size'):
+    def __init__(self, model, calib_loader, alpha, kreg=None, lamda=None, randomized=True, allow_zero_sets=False, pct_paramtune = 0.3, batch_size=32, lamda_criterion='size'):
         super(ConformalModel, self).__init__()
         self.model = model 
         self.alpha = alpha
@@ -91,7 +91,7 @@ def platt(cmodel, calib_loader, max_iters=10, lr=0.01, epsilon=0.01):
 ### Precomputed-logit versions of the above functions.
 
 class ConformalModelLogits(nn.Module):
-    def __init__(self, model, calib_loader, alpha, kreg=None, lamda=None, randomized=True, allow_zero_sets=True, naive=False, LAC=False, pct_paramtune = 0.3, batch_size=32, lamda_criterion='size'):
+    def __init__(self, model, calib_loader, alpha, kreg=None, lamda=None, randomized=True, allow_zero_sets=False, naive=False, LAC=False, pct_paramtune = 0.3, batch_size=32, lamda_criterion='size'):
         super(ConformalModelLogits, self).__init__()
         self.model = model 
         self.alpha = alpha
