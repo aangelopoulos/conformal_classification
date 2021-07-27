@@ -9,6 +9,6 @@ authors:
   given-names: "Jitendra"
 - family-names: "Jordan"
   given-names: "Michael I."
-title: "Uncertainty sets for image classifiers using conformal prediction"
+title: Uncertainty sets for image classifiers using conformal prediction
 date-released: 2020-09-29
-url: "https://arxiv.org/abs/2009.14193"
+url: https://arxiv.org/abs/2009.14193
