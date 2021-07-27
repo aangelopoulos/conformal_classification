@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Angelopoulos"
+  given-names: "Anastasios N."
+- family-names: "Bates"
+  given-names: "Stephen"
+- family-names: "Malik"
+  given-names: "Jitendra"
+- family-names: "Jordan"
+  given-names: "Michael I."
+title: "Uncertainty sets for image classifiers using conformal prediction"
+date-released: 2021-07-27
+url: "https://arxiv.org/abs/2009.14193"
+journal: arXiv preprint 2009:14193
