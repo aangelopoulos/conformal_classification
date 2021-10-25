@@ -267,7 +267,7 @@ def pick_parameters(model, calib_logits, alpha, kreg, lamda, randomized, allow_z
     num_paramtune = int(np.ceil(pct_paramtune * len(calib_logits)))
     paramtune_logits, calib_logits = tdata.random_split(calib_logits, [num_paramtune, len(calib_logits)-num_paramtune])
     calib_loader = tdata.DataLoader(calib_logits, batch_size=batch_size, shuffle=False, pin_memory=True)
-    paramtune_loader = tdata.DataLoader(calib_logits, batch_size=batch_size, shuffle=False, pin_memory=True)
+    paramtune_loader = tdata.DataLoader(paramtune_logits, batch_size=batch_size, shuffle=False, pin_memory=True)
 
     if kreg == None:
         kreg = pick_kreg(paramtune_logits, alpha)
